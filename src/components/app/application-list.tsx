@@ -49,14 +49,14 @@ interface Application {
   status: string;
   fileNumber: string | null;
   currentStep: string;
-  poDecision: string | null;
+  plbDecision: string | null;
   createdAt: string;
   updatedAt: string;
   steps: ApplicationStep[];
   ptStaff: StaffInfo | null;
   ppkpStaff: StaffInfo | null;
   pplStaff: StaffInfo | null;
-  poStaff: StaffInfo | null;
+  plbStaff: StaffInfo | null;
   currentStepStatus: string | null;
   currentStepName: string | null;
   isOverdue: boolean;
@@ -120,7 +120,7 @@ export default function ApplicationList({ onSelect }: ApplicationListProps) {
                   <SelectItem value="PT_PROCESSING">PT Memproses</SelectItem>
                   <SelectItem value="PPKP_PROCESSING">PPKP Memproses</SelectItem>
                   <SelectItem value="PPL_REVIEW">PPL Mengulas</SelectItem>
-                  <SelectItem value="PO_DECISION">Keputusan PO</SelectItem>
+                  <SelectItem value="PLB_DECISION">Keputusan PLB</SelectItem>
                   <SelectItem value="COMPLETED">Selesai</SelectItem>
                 </SelectContent>
               </Select>
@@ -257,11 +257,11 @@ export default function ApplicationList({ onSelect }: ApplicationListProps) {
                   )}
 
                   {/* Completed info */}
-                  {app.status === 'COMPLETED' && app.poDecision && (
+                  {app.status === 'COMPLETED' && app.plbDecision && (
                     <div className="rounded-md bg-emerald-50 border border-emerald-200 p-2 mb-3">
                       <p className="text-xs text-emerald-700">
-                        Keputusan: {app.poDecision === 'SIMPAN_FAIL' ? 'Simpan Fail' :
-                          app.poDecision === 'JABATAN_KESIHATAN' ? 'Hantar ke J. Kesihatan' :
+                        Keputusan: {app.plbDecision === 'SIMPAN_FAIL' ? 'Simpan Fail' :
+                          app.plbDecision === 'JABATAN_KESIHATAN' ? 'Hantar ke J. Kesihatan' :
                           'Hantar ke J. Perancang Bandar'}
                       </p>
                     </div>

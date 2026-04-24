@@ -16,7 +16,7 @@ export async function GET(
         ptStaff: true,
         ppkpStaff: true,
         pplStaff: true,
-        poStaff: true,
+        plbStaff: true,
       },
     });
 

@@ -1,4 +1,4 @@
-import { APPLICATION_TYPES, WORKFLOW_STEPS, APPLICATION_STATUSES, STAFF_ROLES, PO_DECISIONS } from './constants';
+import { APPLICATION_TYPES, WORKFLOW_STEPS, APPLICATION_STATUSES, STAFF_ROLES, PLB_DECISIONS } from './constants';
 
 export function formatApplicationType(type: string): string {
   return (APPLICATION_TYPES as any)[type]?.label || type;
@@ -16,8 +16,8 @@ export function formatStaffRole(role: string): string {
   return (STAFF_ROLES as any)[role]?.label || role;
 }
 
-export function formatPoDecision(decision: string): string {
-  return (PO_DECISIONS as any)[decision]?.label || decision;
+export function formatPlbDecision(decision: string): string {
+  return (PLB_DECISIONS as any)[decision]?.label || decision;
 }
 
 export function getStatusColor(status: string): string {
@@ -26,7 +26,7 @@ export function getStatusColor(status: string): string {
     PT_PROCESSING: 'bg-sky-100 text-sky-800 border-sky-200',
     PPKP_PROCESSING: 'bg-violet-100 text-violet-800 border-violet-200',
     PPL_REVIEW: 'bg-teal-100 text-teal-800 border-teal-200',
-    PO_DECISION: 'bg-orange-100 text-orange-800 border-orange-200',
+    PLB_DECISION: 'bg-orange-100 text-orange-800 border-orange-200',
     COMPLETED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     REJECTED: 'bg-red-100 text-red-800 border-red-200',
   };

@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         ptStaff: { select: { id: true, name: true, role: true } },
         ppkpStaff: { select: { id: true, name: true, role: true } },
         pplStaff: { select: { id: true, name: true, role: true } },
-        poStaff: { select: { id: true, name: true, role: true } },
+        plbStaff: { select: { id: true, name: true, role: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const ppkpStaff = await db.staff.findFirst({ where: { role: ppkpRole, isActive: true } });
     const pplRole = getPPLRole(ppkpRole);
     const pplStaff = await db.staff.findFirst({ where: { role: pplRole, isActive: true } });
-    const poStaff = await db.staff.findFirst({ where: { role: 'PO', isActive: true } });
+    const plbStaff = await db.staff.findFirst({ where: { role: 'PLB', isActive: true } });
     const kaunterStaff = await db.staff.findFirst({ where: { role: 'KAUNTER', isActive: true } });
 
     const now = new Date();
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
         ptStaffId: ptStaff?.id || null,
         ppkpStaffId: ppkpStaff?.id || null,
         pplStaffId: pplStaff?.id || null,
-        poStaffId: poStaff?.id || null,
+        plbStaffId: plbStaff?.id || null,
       },
     });
 
@@ -155,9 +155,9 @@ export async function POST(request: Request) {
         },
         {
           applicationId: application.id,
-          step: 'PO_DECISION',
+          step: 'PLB_DECISION',
           status: 'PENDING',
-          assignedToId: poStaff?.id || null,
+          assignedToId: plbStaff?.id || null,
           slaDays: 0,
         },
       ],
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
         ptStaff: true,
         ppkpStaff: true,
         pplStaff: true,
-        poStaff: true,
+        plbStaff: true,
       },
     });
 

@@ -10,19 +10,19 @@ datasource db {
 model Staff {
   id        String   @id @default(cuid())
   name      String
-  role      String   // KAUNTER, PT, PPKP_L, PPKP_P, PPL_L, PPL_P, PO
-  zone      String?  // A, B, C, D, E (null for KAUNTER, PO)
+  role      String   // KAUNTER, PT, PPKP_L, PPKP_P, PPL_L, PPL_P, PLB
+  zone      String?  // A, B, C, D, E (null for KAUNTER, PLB)
   email     String?
   phone     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedSteps WorkflowStep[]  @relation("StepAssignedStaff")
+  assignedSteps   WorkflowStep[]  @relation("StepAssignedStaff")
   ptApplications  Application[] @relation("PTAssigned")
   ppkpApplications Application[] @relation("PPKPAssigned")
   pplApplications Application[] @relation("PPLAssigned")
-  poApplications  Application[] @relation("POAssigned")
+  plbApplications Application[] @relation("PLBAssigned")
 }
 
 model Application {
@@ -34,29 +34,29 @@ model Application {
   applicantAddress String?
   applicationType String   // G1, G1_P, G2, G3, G7, G8, G9, G11, PAPAN_IKLAN, PERMIT_SEMENTARA
   zone            String   // A, B, C, D, E
-  status          String   // PENDING_PT, PT_PROCESSING, PPKP_PROCESSING, PPL_REVIEW, PO_DECISION, COMPLETED, REJECTED
+  status          String   // PENDING_PT, PT_PROCESSING, PPKP_PROCESSING, PPL_REVIEW, PLB_DECISION, COMPLETED, REJECTED
   fileNumber      String?
-  currentStep     String   // KAUNTER, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PO_DECISION
+  currentStep     String   // KAUNTER, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PLB_DECISION
   ptStaffId       String?
   ppkpStaffId     String?
   pplStaffId      String?
-  poStaffId       String?
-  poDecision      String?  // SIMPAN_FAIL, JABATAN_KESIHATAN, JABATAN_PERANCANG_BANDAR
-  poDecisionNotes String?
+  plbStaffId      String?
+  plbDecision      String?  // SIMPAN_FAIL, JABATAN_KESIHATAN, JABATAN_PERANCANG_BANDAR
+  plbDecisionNotes String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   ptStaff    Staff?         @relation("PTAssigned", fields: [ptStaffId], references: [id])
   ppkpStaff  Staff?         @relation("PPKPAssigned", fields: [ppkpStaffId], references: [id])
   pplStaff   Staff?         @relation("PPLAssigned", fields: [pplStaffId], references: [id])
-  poStaff    Staff?         @relation("POAssigned", fields: [poStaffId], references: [id])
+  plbStaff   Staff?         @relation("PLBAssigned", fields: [plbStaffId], references: [id])
   steps      WorkflowStep[]
 }
 
 model WorkflowStep {
   id            String   @id @default(cuid())
   applicationId String
-  step          String   // KAUNTER_RECEIPT, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PO_DECISION
+  step          String   // KAUNTER_RECEIPT, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PLB_DECISION
   status        String   // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
   assignedToId  String?
   startedAt     DateTime?

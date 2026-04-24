@@ -39,9 +39,9 @@ import {
   formatStepName,
   getStepStatusColor,
   formatStaffRole,
-  formatPoDecision,
+  formatPlbDecision,
 } from '@/lib/formatters';
-import { WORKFLOW_STEPS, PO_DECISIONS } from '@/lib/constants';
+import { WORKFLOW_STEPS, PLB_DECISIONS } from '@/lib/constants';
 import { toast } from 'sonner';
 
 interface ApplicationStep {
@@ -75,15 +75,15 @@ interface Application {
   status: string;
   fileNumber: string | null;
   currentStep: string;
-  poDecision: string | null;
-  poDecisionNotes: string | null;
+  plbDecision: string | null;
+  plbDecisionNotes: string | null;
   createdAt: string;
   updatedAt: string;
   steps: ApplicationStep[];
   ptStaff: StaffInfo | null;
   ppkpStaff: StaffInfo | null;
   pplStaff: StaffInfo | null;
-  poStaff: StaffInfo | null;
+  plbStaff: StaffInfo | null;
   currentStepStatus: string | null;
   currentStepName: string | null;
   isOverdue: boolean;
@@ -101,8 +101,8 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
   const [actionLoading, setActionLoading] = useState(false);
   const [fileNumber, setFileNumber] = useState('');
   const [comments, setComments] = useState('');
-  const [poDecision, setPoDecision] = useState('');
-  const [poDecisionNotes, setPoDecisionNotes] = useState('');
+  const [plbDecision, setPlbDecision] = useState('');
+  const [plbDecisionNotes, setPlbDecisionNotes] = useState('');
 
   const handleAction = async (action: string) => {
     setActionLoading(true);
@@ -110,17 +110,17 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
       const body: any = { action };
       if (action === 'REGISTER_FILE') body.fileNumber = fileNumber;
       if (action === 'PPKP_COMPLETE' || action === 'PPL_REVIEW_COMPLETE' || action === 'OPEN_FILE') body.comments = comments;
-      if (action === 'PO_DECIDE') {
-        body.poDecision = poDecision;
-        body.poDecisionNotes = poDecisionNotes;
+      if (action === 'PLB_DECIDE') {
+        body.plbDecision = plbDecision;
+        body.plbDecisionNotes = plbDecisionNotes;
       }
 
       await postData(`/api/applications/${applicationId}/action`, body);
       toast.success('Tindakan berjaya diproses!');
       setFileNumber('');
       setComments('');
-      setPoDecision('');
-      setPoDecisionNotes('');
+      setPlbDecision('');
+      setPlbDecisionNotes('');
       refetch();
     } catch (error: any) {
       toast.error(error.message || 'Tindakan gagal');
@@ -245,30 +245,30 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                   <p className="font-medium">{app.pplStaff.name}</p>
                 </div>
               )}
-              {app.poStaff && (
+              {app.plbStaff && (
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">PO</span>
-                  <p className="font-medium">{app.poStaff.name}</p>
+                  <span className="text-muted-foreground">PLB</span>
+                  <p className="font-medium">{app.plbStaff.name}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* PO Decision */}
-          {app.poDecision && (
+          {/* PLB Decision */}
+          {app.plbDecision && (
             <Card className="border-emerald-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
-                  Keputusan PO
+                  Keputusan PLB
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <Badge className="bg-emerald-100 text-emerald-800 mb-2">
-                  {formatPoDecision(app.poDecision)}
+                  {formatPlbDecision(app.plbDecision)}
                 </Badge>
-                {app.poDecisionNotes && (
-                  <p className="text-sm text-muted-foreground mt-1">{app.poDecisionNotes}</p>
+                {app.plbDecisionNotes && (
+                  <p className="text-sm text-muted-foreground mt-1">{app.plbDecisionNotes}</p>
                 )}
               </CardContent>
             </Card>
@@ -487,13 +487,13 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                     </div>
                     <Button onClick={() => handleAction('PPL_REVIEW_COMPLETE')} disabled={actionLoading || !comments}>
                       {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                      Hantar Ulasan ke PO
+                      Hantar Ulasan ke PLB
                     </Button>
                   </div>
                 )}
 
-                {/* PO Decision Action */}
-                {activeStep.step === 'PO_DECISION' && app.status === 'PO_DECISION' && (
+                {/* PLB Decision Action */}
+                {activeStep.step === 'PLB_DECISION' && app.status === 'PLB_DECISION' && (
                   <div className="space-y-3">
                     <div className="rounded-md bg-orange-50 border border-orange-200 p-3">
                       <p className="text-xs text-orange-700">
@@ -501,29 +501,29 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                       </p>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="poDecision">Keputusan *</Label>
-                      <Select value={poDecision} onValueChange={setPoDecision}>
+                      <Label htmlFor="plbDecision">Keputusan *</Label>
+                      <Select value={plbDecision} onValueChange={setPlbDecision}>
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih keputusan" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.entries(PO_DECISIONS).map(([key, val]) => (
+                          {Object.entries(PLB_DECISIONS).map(([key, val]) => (
                             <SelectItem key={key} value={key}>{val.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="poNotes">Catatan Keputusan</Label>
+                      <Label htmlFor="plbNotes">Catatan Keputusan</Label>
                       <Textarea
-                        id="poNotes"
-                        value={poDecisionNotes}
-                        onChange={(e) => setPoDecisionNotes(e.target.value)}
+                        id="plbNotes"
+                        value={plbDecisionNotes}
+                        onChange={(e) => setPlbDecisionNotes(e.target.value)}
                         placeholder="Masukkan catatan keputusan..."
                         rows={2}
                       />
                     </div>
-                    <Button onClick={() => handleAction('PO_DECIDE')} disabled={actionLoading || !poDecision}>
+                    <Button onClick={() => handleAction('PLB_DECIDE')} disabled={actionLoading || !plbDecision}>
                       {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                       Sahkan Keputusan
                     </Button>

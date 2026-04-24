@@ -228,7 +228,7 @@ export default function Dashboard() {
               { label: 'PT', desc: 'Daftar No. Fail', sla: 'Segera' },
               { label: 'PPKP(L/P)', desc: 'Pemprosesan', sla: '4 hari' },
               { label: 'PPL(L/P)', desc: 'Ulasan', sla: '3 hari' },
-              { label: 'PO', desc: 'Keputusan', sla: '-' },
+              { label: 'PLB', desc: 'Keputusan', sla: '-' },
             ].map((item, i, arr) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="rounded-lg border bg-card p-3 text-center min-w-[100px]">
@@ -259,7 +259,7 @@ export default function Dashboard() {
               <p className="text-[10px] text-teal-600">→ PPL(P)</p>
             </div>
             <div className="rounded-lg bg-orange-50 border border-orange-200 p-3">
-              <p className="text-xs font-semibold text-orange-700">Keputusan PO</p>
+              <p className="text-xs font-semibold text-orange-700">Keputusan PLB</p>
               <p className="text-[10px] text-orange-600 mt-1">
                 Simpan Fail / Jabatan Kesihatan / Jabatan Perancang Bandar
               </p>

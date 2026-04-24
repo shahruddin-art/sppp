@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { action, fileNumber, comments, poDecision, poDecisionNotes } = body;
+    const { action, fileNumber, comments, plbDecision, plbDecisionNotes } = body;
 
     const application = await db.application.findUnique({
       where: { id },
@@ -143,7 +143,7 @@ export async function POST(
       }
 
       case 'PPL_REVIEW_COMPLETE': {
-        // PPL completes review, sends to PO
+        // PPL completes review, sends to PLB
         const pplStep = application.steps.find(s => s.step === 'PPL_REVIEW' && s.status !== 'COMPLETED');
         if (!pplStep) {
           return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
@@ -158,11 +158,11 @@ export async function POST(
           },
         });
 
-        // Start PO decision
-        const poStep = application.steps.find(s => s.step === 'PO_DECISION');
-        if (poStep) {
+        // Start PLB decision
+        const plbStep = application.steps.find(s => s.step === 'PLB_DECISION');
+        if (plbStep) {
           await db.workflowStep.update({
-            where: { id: poStep.id },
+            where: { id: plbStep.id },
             data: {
               status: 'IN_PROGRESS',
               startedAt: now,
@@ -172,28 +172,28 @@ export async function POST(
 
         await db.application.update({
           where: { id },
-          data: { status: 'PO_DECISION', currentStep: 'PO_DECISION', updatedAt: now },
+          data: { status: 'PLB_DECISION', currentStep: 'PLB_DECISION', updatedAt: now },
         });
         break;
       }
 
-      case 'PO_DECIDE': {
-        // PO makes decision
-        if (!poDecision) {
+      case 'PLB_DECIDE': {
+        // PLB makes decision
+        if (!plbDecision) {
           return NextResponse.json({ error: 'Keputusan diperlukan' }, { status: 400 });
         }
 
-        const poStep = application.steps.find(s => s.step === 'PO_DECISION' && s.status !== 'COMPLETED');
-        if (!poStep) {
+        const plbStep = application.steps.find(s => s.step === 'PLB_DECISION' && s.status !== 'COMPLETED');
+        if (!plbStep) {
           return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
         }
 
         await db.workflowStep.update({
-          where: { id: poStep.id },
+          where: { id: plbStep.id },
           data: {
             status: 'COMPLETED',
             completedAt: now,
-            comments: poDecisionNotes || `Keputusan: ${poDecision}`,
+            comments: plbDecisionNotes || `Keputusan: ${plbDecision}`,
           },
         });
 
@@ -201,9 +201,9 @@ export async function POST(
           where: { id },
           data: {
             status: 'COMPLETED',
-            currentStep: 'PO_DECISION',
-            poDecision,
-            poDecisionNotes: poDecisionNotes || null,
+            currentStep: 'PLB_DECISION',
+            plbDecision,
+            plbDecisionNotes: plbDecisionNotes || null,
             updatedAt: now,
           },
         });
@@ -222,7 +222,7 @@ export async function POST(
         ptStaff: true,
         ppkpStaff: true,
         pplStaff: true,
-        poStaff: true,
+        plbStaff: true,
       },
     });
 

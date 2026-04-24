@@ -29,15 +29,15 @@ interface Application {
   status: string;
   fileNumber: string | null;
   currentStep: string;
-  poDecision: string | null;
-  poDecisionNotes: string | null;
+  plbDecision: string | null;
+  plbDecisionNotes: string | null;
   createdAt: string;
   updatedAt: string;
   steps: any[];
   ptStaff: any;
   ppkpStaff: any;
   pplStaff: any;
-  poStaff: any;
+  plbStaff: any;
   currentStepStatus: string | null;
   currentStepName: string | null;
   isOverdue: boolean;

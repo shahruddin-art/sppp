@@ -37,9 +37,9 @@ export async function POST(request: Request) {
       // PPL(P) staff
       { name: 'Rosnah Ahmad', role: 'PPL_P', zone: null, email: 'rosnah@mpsp.gov.my', phone: '04-5555002' },
 
-      // PO staff
-      { name: 'Dato\' Ismail', role: 'PO', zone: null, email: 'ismail@mpsp.gov.my', phone: '04-5556001' },
-      { name: 'Encik Farid', role: 'PO', zone: null, email: 'farid@mpsp.gov.my', phone: '04-5556002' },
+      // PLB staff
+      { name: 'Dato\' Ismail', role: 'PLB', zone: null, email: 'ismail@mpsp.gov.my', phone: '04-5556001' },
+      { name: 'Encik Farid', role: 'PLB', zone: null, email: 'farid@mpsp.gov.my', phone: '04-5556002' },
     ];
 
     const staff = [];
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         currentStep: 'PPL_REVIEW',
         fileNumber: 'MPSP/P/2024/002',
       },
-      // Application 5: PO decision
+      // Application 5: PLB decision
       {
         applicantName: 'Kedai Kopi Senang',
         applicantIc: '201704005555',
@@ -105,8 +105,8 @@ export async function POST(request: Request) {
         applicantAddress: 'No 22, Jalan Batu Ferringhi, Zon A',
         applicationType: 'G9',
         zone: 'A',
-        status: 'PO_DECISION',
-        currentStep: 'PO_DECISION',
+        status: 'PLB_DECISION',
+        currentStep: 'PLB_DECISION',
         fileNumber: 'MPSP/L/2024/003',
       },
       // Application 6: Completed
@@ -118,10 +118,10 @@ export async function POST(request: Request) {
         applicationType: 'G3',
         zone: 'E',
         status: 'COMPLETED',
-        currentStep: 'PO_DECISION',
+        currentStep: 'PLB_DECISION',
         fileNumber: 'MPSP/P/2024/004',
-        poDecision: 'SIMPAN_FAIL',
-        poDecisionNotes: 'Permohonan diluluskan. Fail disimpan.',
+        plbDecision: 'SIMPAN_FAIL',
+        plbDecisionNotes: 'Permohonan diluluskan. Fail disimpan.',
       },
       // Application 7: Another completed - sent to Jabatan Kesihatan
       {
@@ -132,10 +132,10 @@ export async function POST(request: Request) {
         applicationType: 'G1_P',
         zone: 'B',
         status: 'COMPLETED',
-        currentStep: 'PO_DECISION',
+        currentStep: 'PLB_DECISION',
         fileNumber: 'MPSP/L/2024/005',
-        poDecision: 'JABATAN_KESIHATAN',
-        poDecisionNotes: 'Perlu pengesahan Jabatan Kesihatan.',
+        plbDecision: 'JABATAN_KESIHATAN',
+        plbDecisionNotes: 'Perlu pengesahan Jabatan Kesihatan.',
       },
       // Application 8: Overdue PT processing
       {
@@ -157,10 +157,10 @@ export async function POST(request: Request) {
         applicationType: 'G1',
         zone: 'D',
         status: 'COMPLETED',
-        currentStep: 'PO_DECISION',
+        currentStep: 'PLB_DECISION',
         fileNumber: 'MPSP/L/2024/006',
-        poDecision: 'JABATAN_PERANCANG_BANDAR',
-        poDecisionNotes: 'Perlu kelulusan Jabatan Perancang Bandar.',
+        plbDecision: 'JABATAN_PERANCANG_BANDAR',
+        plbDecisionNotes: 'Perlu kelulusan Jabatan Perancang Bandar.',
       },
       // Application 10: Papan Iklan - PPKP processing
       {
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
       const ppkpStaff = staff.find(s => s.role === ppkpRole);
       const pplRole = getPPLRole(ppkpRole);
       const pplStaff = staff.find(s => s.role === pplRole);
-      const poStaff = staff.find(s => s.role === 'PO');
+      const plbStaff = staff.find(s => s.role === 'PLB');
 
       const application = await db.application.create({
         data: {
@@ -224,19 +224,19 @@ export async function POST(request: Request) {
           status: app.status,
           currentStep: app.currentStep,
           fileNumber: app.fileNumber || null,
-          poDecision: app.poDecision || null,
-          poDecisionNotes: app.poDecisionNotes || null,
+          plbDecision: app.plbDecision || null,
+          plbDecisionNotes: app.plbDecisionNotes || null,
           ptStaffId: ptStaff?.id || null,
           ppkpStaffId: ppkpStaff?.id || null,
           pplStaffId: pplStaff?.id || null,
-          poStaffId: poStaff?.id || null,
+          plbStaffId: plbStaff?.id || null,
           createdAt,
           updatedAt: createdAt,
         },
       });
 
       // Create workflow steps for each application based on current status
-      const stepsToCreate = getStepsForStatus(app.status, createdAt, now, app.zone, staff, ptStaff, ppkpStaff, pplStaff, poStaff);
+      const stepsToCreate = getStepsForStatus(app.status, createdAt, now, app.zone, staff, ptStaff, ppkpStaff, pplStaff, plbStaff);
 
       for (const step of stepsToCreate) {
         await db.workflowStep.create({
@@ -271,7 +271,7 @@ function getStepsForStatus(
   ptStaff: any,
   ppkpStaff: any,
   pplStaff: any,
-  poStaff: any
+  plbStaff: any
 ) {
   const steps: any[] = [];
   const kaunterStaff = staff.find(s => s.role === 'KAUNTER');
@@ -400,12 +400,12 @@ function getStepsForStatus(
     comments: 'Ulasan PPL diberikan',
   });
 
-  // Step 6: PO Decision
-  if (status === 'PO_DECISION') {
+  // Step 6: PLB Decision
+  if (status === 'PLB_DECISION') {
     steps.push({
-      step: 'PO_DECISION',
+      step: 'PLB_DECISION',
       status: 'IN_PROGRESS',
-      assignedToId: poStaff?.id || null,
+      assignedToId: plbStaff?.id || null,
       startedAt: pplCompleteTime,
       completedAt: null,
       slaDays: 0,
@@ -417,9 +417,9 @@ function getStepsForStatus(
 
   if (status === 'COMPLETED') {
     steps.push({
-      step: 'PO_DECISION',
+      step: 'PLB_DECISION',
       status: 'COMPLETED',
-      assignedToId: poStaff?.id || null,
+      assignedToId: plbStaff?.id || null,
       startedAt: pplCompleteTime,
       completedAt: new Date(pplCompleteTime.getTime() + 24 * 60 * 60 * 1000),
       slaDays: 0,

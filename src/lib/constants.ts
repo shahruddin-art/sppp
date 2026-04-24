@@ -21,7 +21,7 @@ export const WORKFLOW_STEPS = {
   PT_FILE_REGISTRATION: { label: 'Pendaftaran No. Fail', order: 3 },
   PPKP_PROCESSING: { label: 'Pemprosesan PPKP', order: 4, slaDays: 4 },
   PPL_REVIEW: { label: 'Ulasan PPL', order: 5, slaDays: 3 },
-  PO_DECISION: { label: 'Keputusan PO', order: 6 },
+  PLB_DECISION: { label: 'Keputusan PLB', order: 6 },
 } as const;
 
 export type WorkflowStepKey = keyof typeof WORKFLOW_STEPS;
@@ -32,7 +32,7 @@ export const APPLICATION_STATUSES = {
   PT_PROCESSING: { label: 'PT Memproses', color: 'blue' },
   PPKP_PROCESSING: { label: 'PPKP Memproses', color: 'purple' },
   PPL_REVIEW: { label: 'PPL Mengulas', color: 'teal' },
-  PO_DECISION: { label: 'Keputusan PO', color: 'orange' },
+  PLB_DECISION: { label: 'Keputusan PLB', color: 'orange' },
   COMPLETED: { label: 'Selesai', color: 'green' },
   REJECTED: { label: 'Ditolak', color: 'red' },
 } as const;
@@ -45,15 +45,15 @@ export const STAFF_ROLES = {
   PPKP_P: { label: 'PPKP(P)' },
   PPL_L: { label: 'PPL(L)' },
   PPL_P: { label: 'PPL(P)' },
-  PO: { label: 'Pegawai Operasi (PO)' },
+  PLB: { label: 'Pegawai Lesen & Biz (PLB)' },
 } as const;
 
 // Zones
 export const ZONES = ['A', 'B', 'C', 'D', 'E'] as const;
 export type Zone = (typeof ZONES)[number];
 
-// PO Decisions
-export const PO_DECISIONS = {
+// PLB Decisions
+export const PLB_DECISIONS = {
   SIMPAN_FAIL: { label: 'Simpan Fail' },
   JABATAN_KESIHATAN: { label: 'Hantar ke Jabatan Kesihatan' },
   JABATAN_PERANCANG_BANDAR: { label: 'Hantar ke Jabatan Perancang Bandar' },

@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         ptStaff: true,
         ppkpStaff: true,
         pplStaff: true,
-        poStaff: true,
+        plbStaff: true,
       },
       orderBy: { createdAt: 'desc' },
     });

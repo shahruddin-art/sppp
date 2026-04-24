@@ -203,7 +203,7 @@ export default function ApplicationForm() {
                   </Badge>
                   <span className="text-xs text-muted-foreground">→</span>
                   <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                    PO
+                    PLB
                   </Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2">
