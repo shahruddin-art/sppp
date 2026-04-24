@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   // KAUNTER, PT, PPKP_L, PPKP_P, PPL_L, PPL_P, PO
+  zone      String?  // A, B, C, D, E (null for KAUNTER, PO)
+  email     String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedSteps WorkflowStep[]  @relation("StepAssignedStaff")
+  ptApplications  Application[] @relation("PTAssigned")
+  ppkpApplications Application[] @relation("PPKPAssigned")
+  pplApplications Application[] @relation("PPLAssigned")
+  poApplications  Application[] @relation("POAssigned")
+}
+
+model Application {
+  id              String   @id @default(cuid())
+  referenceNo     String   @unique
+  applicantName   String
+  applicantIc     String
+  applicantPhone  String?
+  applicantAddress String?
+  applicationType String   // G1, G1_P, G2, G3, G7, G8, G9, G11, PAPAN_IKLAN, PERMIT_SEMENTARA
+  zone            String   // A, B, C, D, E
+  status          String   // PENDING_PT, PT_PROCESSING, PPKP_PROCESSING, PPL_REVIEW, PO_DECISION, COMPLETED, REJECTED
+  fileNumber      String?
+  currentStep     String   // KAUNTER, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PO_DECISION
+  ptStaffId       String?
+  ppkpStaffId     String?
+  pplStaffId      String?
+  poStaffId       String?
+  poDecision      String?  // SIMPAN_FAIL, JABATAN_KESIHATAN, JABATAN_PERANCANG_BANDAR
+  poDecisionNotes String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ptStaff    Staff?         @relation("PTAssigned", fields: [ptStaffId], references: [id])
+  ppkpStaff  Staff?         @relation("PPKPAssigned", fields: [ppkpStaffId], references: [id])
+  pplStaff   Staff?         @relation("PPLAssigned", fields: [pplStaffId], references: [id])
+  poStaff    Staff?         @relation("POAssigned", fields: [poStaffId], references: [id])
+  steps      WorkflowStep[]
+}
+
+model WorkflowStep {
+  id            String   @id @default(cuid())
+  applicationId String
+  step          String   // KAUNTER_RECEIPT, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PO_DECISION
+  status        String   // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
+  assignedToId  String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  slaDays       Float    // SLA in days
+  slaDeadline   DateTime?
+  comments      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  assignedTo  Staff?      @relation("StepAssignedStaff", fields: [assignedToId], references: [id])
+}
