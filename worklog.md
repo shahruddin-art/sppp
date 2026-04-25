@@ -100,3 +100,37 @@ Stage Summary:
 - Kaunter users no longer see "Tiada kebenaran tindakan" (No Permission) notice in application detail view
 - Kaunter users now see a simple "Status Semasa" info card showing which role is processing
 - Kaunter dashboard application list cards now use neutral styling for current step info instead of action-oriented blue styling
+---
+Task ID: 3
+Agent: Main Agent
+Task: Add "Ditolak" (Rejected) decision option for PLB
+
+Work Log:
+- Added DITOLAK option to PLB_DECISIONS in src/lib/constants.ts
+- Updated API route (action/route.ts): when PLB chooses DITOLAK, application status is set to REJECTED instead of COMPLETED
+- Updated PLB dashboard (plb-dashboard.tsx):
+  - Added XCircle icon import for Ditolak decision
+  - Added DITOLAK case to getDecisionIcon() → XCircle icon
+  - Added DITOLAK case to getDecisionBadgeColor() → red styling
+  - Updated completedApplications filter to include REJECTED status
+  - Added rejectedCount variable for stats
+  - Added "Ditolak" stats card (5th card, red themed)
+  - Updated stats grid from 4 to 5 columns
+- Updated Kaunter dashboard (kaunter-dashboard.tsx):
+  - Completed info now also shows for REJECTED status with red styling
+  - Added Ditolak to decision text mapping
+- Updated Application Detail (application-detail.tsx):
+  - Added XCircle import
+  - PLB Decision card now shows red styling when status is REJECTED
+  - Decision badge color changes to red for rejected applications
+  - Title icon changes to XCircle for rejected
+- Updated Application List (application-list.tsx):
+  - Completed info now also shows for REJECTED status with red styling
+  - Added Ditolak to decision text mapping
+- Lint check passed, dev server running correctly
+
+Stage Summary:
+- PLB now has 4 decision options: Simpan Fail, Hantar ke Jabatan Kesihatan, Hantar ke Jabatan Perancang Bandar, Ditolak
+- When PLB selects Ditolak, application status becomes REJECTED (not COMPLETED)
+- All components properly display rejected applications with red styling
+- PLB dashboard has a new "Ditolak" stats card

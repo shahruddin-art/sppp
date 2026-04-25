@@ -263,6 +263,8 @@ export async function POST(
           return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
         }
 
+        const isRejected = plbDecision === 'DITOLAK';
+
         await db.workflowStep.update({
           where: { id: plbStep.id },
           data: {
@@ -275,7 +277,7 @@ export async function POST(
         await db.application.update({
           where: { id },
           data: {
-            status: 'COMPLETED',
+            status: isRejected ? 'REJECTED' : 'COMPLETED',
             currentStep: 'PLB_DECISION',
             plbDecision,
             plbDecisionNotes: plbDecisionNotes || null,

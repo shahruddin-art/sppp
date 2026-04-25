@@ -57,6 +57,7 @@ export const PLB_DECISIONS = {
   SIMPAN_FAIL: { label: 'Simpan Fail' },
   JABATAN_KESIHATAN: { label: 'Hantar ke Jabatan Kesihatan' },
   JABATAN_PERANCANG_BANDAR: { label: 'Hantar ke Jabatan Perancang Bandar' },
+  DITOLAK: { label: 'Ditolak' },
 } as const;
 
 // Helper to determine PPKP type based on application type

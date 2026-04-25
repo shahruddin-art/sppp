@@ -23,6 +23,7 @@ import {
   Archive,
   Building2,
   Landmark,
+  XCircle,
 } from 'lucide-react';
 import {
   formatStatus,
@@ -102,10 +103,15 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
     (app) => app.status === 'PLB_DECISION'
   );
 
-  // Recently completed applications with PLB decisions
+  // Recently completed/rejected applications with PLB decisions
   const completedApplications = (allApplications || [])
-    .filter((app) => app.status === 'COMPLETED' && app.plbDecision)
+    .filter((app) => (app.status === 'COMPLETED' || app.status === 'REJECTED') && app.plbDecision)
     .slice(0, 10);
+
+  // Count of rejected applications
+  const rejectedCount = (allApplications || []).filter(
+    (app) => app.status === 'REJECTED' && app.plbDecision === 'DITOLAK'
+  ).length;
 
   const handleDecisionChange = (appId: string, value: string) => {
     setDecisionMap((prev) => ({ ...prev, [appId]: value }));
@@ -170,6 +176,8 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
         return <Building2 className="h-4 w-4" />;
       case 'JABATAN_PERANCANG_BANDAR':
         return <Landmark className="h-4 w-4" />;
+      case 'DITOLAK':
+        return <XCircle className="h-4 w-4" />;
       default:
         return <Gavel className="h-4 w-4" />;
     }
@@ -184,6 +192,8 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
         return 'bg-sky-100 text-sky-800 border-sky-200';
       case 'JABATAN_PERANCANG_BANDAR':
         return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'DITOLAK':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
         return '';
     }
@@ -238,7 +248,7 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
       </Card>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-orange-700">{pendingApplications.length}</p>
@@ -247,7 +257,7 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-emerald-600">{completedApplications.length}</p>
+            <p className="text-2xl font-bold text-emerald-600">{completedApplications.filter((a) => a.status === 'COMPLETED').length}</p>
             <p className="text-xs text-muted-foreground">Selesai</p>
           </CardContent>
         </Card>
@@ -265,6 +275,12 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
               {completedApplications.filter((a) => a.plbDecision === 'JABATAN_PERANCANG_BANDAR').length}
             </p>
             <p className="text-xs text-muted-foreground">Hantar ke J. Perancang</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-red-600">{rejectedCount}</p>
+            <p className="text-xs text-muted-foreground">Ditolak</p>
           </CardContent>
         </Card>
       </div>

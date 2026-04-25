@@ -548,15 +548,23 @@ function SenaraiPermohonan({
                   )}
 
                   {/* Completed info */}
-                  {app.status === 'COMPLETED' && app.plbDecision && (
-                    <div className="rounded-md bg-emerald-50 border border-emerald-200 p-2 mb-3">
-                      <p className="text-xs text-emerald-700">
+                  {(app.status === 'COMPLETED' || app.status === 'REJECTED') && app.plbDecision && (
+                    <div className={`rounded-md p-2 mb-3 ${
+                      app.status === 'REJECTED'
+                        ? 'bg-red-50 border border-red-200'
+                        : 'bg-emerald-50 border border-emerald-200'
+                    }`}>
+                      <p className={`text-xs ${
+                        app.status === 'REJECTED' ? 'text-red-700' : 'text-emerald-700'
+                      }`}>
                         Keputusan:{' '}
                         {app.plbDecision === 'SIMPAN_FAIL'
                           ? 'Simpan Fail'
                           : app.plbDecision === 'JABATAN_KESIHATAN'
                             ? 'Hantar ke J. Kesihatan'
-                            : 'Hantar ke J. Perancang Bandar'}
+                            : app.plbDecision === 'JABATAN_PERANCANG_BANDAR'
+                              ? 'Hantar ke J. Perancang Bandar'
+                              : 'Ditolak'}
                       </p>
                     </div>
                   )}

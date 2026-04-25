@@ -26,6 +26,7 @@ import {
   CircleAlert,
   CircleDot,
   ShieldAlert,
+  XCircle,
 } from 'lucide-react';
 import { postData } from '@/hooks/use-fetch';
 import {
@@ -284,15 +285,15 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
 
           {/* PLB Decision */}
           {app.plbDecision && (
-            <Card className="border-emerald-200">
+            <Card className={app.status === 'REJECTED' ? 'border-red-200' : 'border-emerald-200'}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2 text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" />
+                <CardTitle className={`text-sm flex items-center gap-2 ${app.status === 'REJECTED' ? 'text-red-700' : 'text-emerald-700'}`}>
+                  {app.status === 'REJECTED' ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                   Keputusan PLB
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Badge className="bg-emerald-100 text-emerald-800 mb-2">
+                <Badge className={app.status === 'REJECTED' ? 'bg-red-100 text-red-800 mb-2' : 'bg-emerald-100 text-emerald-800 mb-2'}>
                   {formatPlbDecision(app.plbDecision)}
                 </Badge>
                 {app.plbDecisionNotes && (
