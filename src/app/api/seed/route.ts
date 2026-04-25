@@ -216,6 +216,20 @@ export async function POST(request: Request) {
         status: 'PENDING_PT',
         currentStep: 'PT_FILE_OPENING',
       },
+      // Application 13: Rejected by PLB (Ditolak)
+      {
+        applicantName: 'Syarikat Gembira Sentosa',
+        applicantIc: '202005001111',
+        applicantPhone: '011-2223333',
+        applicantAddress: 'No 90, Jalan Seberang Perai, Zon A',
+        applicationType: 'G1',
+        zone: 'A',
+        status: 'REJECTED',
+        currentStep: 'PLB_DECISION',
+        fileNumber: 'MPSP/L/2024/009',
+        plbDecision: 'DITOLAK',
+        plbDecisionNotes: 'Permohonan ditolak. Fail tidak lengkap dan tidak memenuhi syarat.',
+      },
     ];
 
     for (let i = 0; i < applications.length; i++) {
@@ -440,7 +454,7 @@ function getStepsForStatus(
     return steps;
   }
 
-  if (status === 'COMPLETED') {
+  if (status === 'COMPLETED' || status === 'REJECTED') {
     steps.push({
       step: 'PLB_DECISION',
       status: 'COMPLETED',
@@ -449,7 +463,7 @@ function getStepsForStatus(
       completedAt: new Date(pplCompleteTime.getTime() + 24 * 60 * 60 * 1000),
       slaDays: 0,
       slaDeadline: null,
-      comments: 'Keputusan dibuat',
+      comments: status === 'REJECTED' ? 'Permohonan ditolak' : 'Keputusan dibuat',
     });
   }
 

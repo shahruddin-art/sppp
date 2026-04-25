@@ -134,3 +134,20 @@ Stage Summary:
 - When PLB selects Ditolak, application status becomes REJECTED (not COMPLETED)
 - All components properly display rejected applications with red styling
 - PLB dashboard has a new "Ditolak" stats card
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix "Ditolak" option not appearing in PLB decision card
+
+Work Log:
+- Root cause analysis: the code for PLB_DECISIONS and the Select dropdown was correct (Object.entries(PLB_DECISIONS) includes DITOLAK), but:
+  1. Seed data had no REJECTED sample applications — so the "Ditolak" display could never be tested
+  2. The getStepsForStatus function in seed route didn't handle 'REJECTED' status
+- Added Application 13 (Syarikat Gembira Sentosa) to seed data with status='REJECTED', plbDecision='DITOLAK'
+- Updated getStepsForStatus to handle both 'COMPLETED' and 'REJECTED' statuses for the PLB decision step
+- Verified lint passes and dev server runs correctly
+
+Stage Summary:
+- Seed data now includes a REJECTED/DITOLAK sample application
+- After reseeding, the "Ditolak" option will appear in the PLB decision dropdown AND a rejected application will be visible in the "Keputusan Terkini" section
+- Users need to click "Muat Data Contoh" to reseed and see the new sample data
