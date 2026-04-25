@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useFetch, postData } from '@/hooks/use-fetch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +20,7 @@ import {
   User,
   FolderOpen,
   RefreshCw,
+  ClipboardList,
 } from 'lucide-react';
 import {
   formatStatus,
@@ -32,6 +34,7 @@ import {
 } from '@/lib/formatters';
 import { APPLICATION_TYPES, WORKFLOW_STEPS } from '@/lib/constants';
 import { toast } from 'sonner';
+import SenaraiPermohonan from '@/components/app/senarai-permohonan';
 
 interface ApplicationStep {
   id: string;
@@ -225,174 +228,194 @@ export default function PPKPDashboard({ user, onSelectApp }: PPKPDashboardProps)
         </Card>
       </div>
 
-      {/* Permohonan Menunggu */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Clock className="h-4 w-4 text-violet-600" />
-          <h3 className="font-semibold text-sm">Permohonan Menunggu</h3>
-          <Badge variant="outline" className="text-[10px] bg-violet-50">
-            {applications.length} permohonan
-          </Badge>
-        </div>
+      {/* Tabs */}
+      <Tabs defaultValue="pemprosesan" className="w-full">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="pemprosesan" className="gap-1.5">
+            <FolderOpen className="h-4 w-4" />
+            Pemprosesan
+          </TabsTrigger>
+          <TabsTrigger value="senarai" className="gap-1.5">
+            <ClipboardList className="h-4 w-4" />
+            Senarai Permohonan
+          </TabsTrigger>
+        </TabsList>
 
-        {loading && !allApplications ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-48 bg-muted rounded" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : applications.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-              <p className="text-muted-foreground font-medium">Tiada permohonan menunggu</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Semua permohonan telah diproses
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <ScrollArea className="max-h-[calc(100vh-320px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-2">
-              {applications.map((app) => {
-                const ppkpStep = app.steps.find((s) => s.step === 'PPKP_PROCESSING');
-                const { text: remainingText, isOverdue: stepOverdue, isWarning } = getRemainingTime(
-                  ppkpStep?.slaDeadline || null
-                );
-                const isLoading = actionLoadingMap[app.id] || false;
+        <TabsContent value="pemprosesan">
+          {/* Permohonan Menunggu */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="h-4 w-4 text-violet-600" />
+              <h3 className="font-semibold text-sm">Permohonan Menunggu</h3>
+              <Badge variant="outline" className="text-[10px] bg-violet-50">
+                {applications.length} permohonan
+              </Badge>
+            </div>
 
-                return (
-                  <Card
-                    key={app.id}
-                    className={`border-l-4 transition-all hover:shadow-md cursor-pointer ${getSlaBorderClass(stepOverdue, isWarning)}`}
-                  >
-                    <CardContent className="p-4 space-y-3">
-                      {/* Card Header */}
-                      <div
-                        className="flex items-start justify-between"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-sm truncate">{app.applicantName}</p>
-                          <p className="text-xs text-muted-foreground">{app.referenceNo}</p>
-                        </div>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${getStatusColor(app.status)}`}>
-                          {formatStatus(app.status)}
-                        </Badge>
-                      </div>
-
-                      {/* Tags */}
-                      <div
-                        className="flex flex-wrap gap-1.5"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
-                          Zon {app.zone}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
-                          {app.applicationTypeLabel}
-                        </Badge>
-                        {app.fileNumber && (
-                          <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
-                            {app.fileNumber}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* SLA Countdown */}
-                      <div
-                        className={`rounded-md p-2.5 ${
-                          stepOverdue
-                            ? 'bg-red-50 border border-red-200'
-                            : isWarning
-                            ? 'bg-amber-50 border border-amber-200'
-                            : 'bg-emerald-50 border border-emerald-200'
-                        }`}
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {stepOverdue ? (
-                              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-                            ) : (
-                              <Clock className="h-4 w-4 text-emerald-500 shrink-0" />
-                            )}
-                            <span className="text-xs font-medium">SLA PPKP (4 hari)</span>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${getSlaBadgeClass(stepOverdue, isWarning)}`}
-                          >
-                            {remainingText}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* PT Staff Info */}
-                      {app.ptStaff && (
-                        <div
-                          className="text-xs text-muted-foreground"
-                          onClick={() => onSelectApp(app.id)}
-                        >
-                          <span className="font-medium">PT:</span> {app.ptStaff.name}
-                        </div>
-                      )}
-
-                      {/* Date info */}
-                      <div
-                        className="text-[10px] text-muted-foreground"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        Diterima: {formatDateTime(app.createdAt)}
-                      </div>
-
-                      <Separator />
-
-                      {/* Action Area */}
-                      <div className="space-y-2.5">
-                        <div className="space-y-1.5">
-                          <Label htmlFor={`ppkp-comment-${app.id}`} className="text-xs">
-                            Catatan Pemprosesan
-                          </Label>
-                          <Textarea
-                            id={`ppkp-comment-${app.id}`}
-                            value={commentsMap[app.id] || ''}
-                            onChange={(e) => handleCommentChange(app.id, e.target.value)}
-                            placeholder="Masukkan catatan pemprosesan PPKP..."
-                            rows={2}
-                            className="text-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePPKPComplete(app.id);
-                          }}
-                          disabled={isLoading}
-                          className="w-full"
-                          size="sm"
-                        >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Send className="h-4 w-4 mr-2" />
-                          )}
-                          Selesai Pemprosesan & Hantar ke PPL
-                        </Button>
-                      </div>
+            {loading && !allApplications ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-4">
+                      <div className="h-48 bg-muted rounded" />
                     </CardContent>
                   </Card>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        )}
-      </div>
+                ))}
+              </div>
+            ) : applications.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
+                  <p className="text-muted-foreground font-medium">Tiada permohonan menunggu</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Semua permohonan telah diproses
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <ScrollArea className="max-h-[calc(100vh-320px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-2">
+                  {applications.map((app) => {
+                    const ppkpStep = app.steps.find((s) => s.step === 'PPKP_PROCESSING');
+                    const { text: remainingText, isOverdue: stepOverdue, isWarning } = getRemainingTime(
+                      ppkpStep?.slaDeadline || null
+                    );
+                    const isLoading = actionLoadingMap[app.id] || false;
+
+                    return (
+                      <Card
+                        key={app.id}
+                        className={`border-l-4 transition-all hover:shadow-md cursor-pointer ${getSlaBorderClass(stepOverdue, isWarning)}`}
+                      >
+                        <CardContent className="p-4 space-y-3">
+                          {/* Card Header */}
+                          <div
+                            className="flex items-start justify-between"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm truncate">{app.applicantName}</p>
+                              <p className="text-xs text-muted-foreground">{app.referenceNo}</p>
+                            </div>
+                            <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${getStatusColor(app.status)}`}>
+                              {formatStatus(app.status)}
+                            </Badge>
+                          </div>
+
+                          {/* Tags */}
+                          <div
+                            className="flex flex-wrap gap-1.5"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
+                              Zon {app.zone}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
+                              {app.applicationTypeLabel}
+                            </Badge>
+                            {app.fileNumber && (
+                              <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
+                                {app.fileNumber}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* SLA Countdown */}
+                          <div
+                            className={`rounded-md p-2.5 ${
+                              stepOverdue
+                                ? 'bg-red-50 border border-red-200'
+                                : isWarning
+                                ? 'bg-amber-50 border border-amber-200'
+                                : 'bg-emerald-50 border border-emerald-200'
+                            }`}
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {stepOverdue ? (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                                ) : (
+                                  <Clock className="h-4 w-4 text-emerald-500 shrink-0" />
+                                )}
+                                <span className="text-xs font-medium">SLA PPKP (4 hari)</span>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] ${getSlaBadgeClass(stepOverdue, isWarning)}`}
+                              >
+                                {remainingText}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* PT Staff Info */}
+                          {app.ptStaff && (
+                            <div
+                              className="text-xs text-muted-foreground"
+                              onClick={() => onSelectApp(app.id)}
+                            >
+                              <span className="font-medium">PT:</span> {app.ptStaff.name}
+                            </div>
+                          )}
+
+                          {/* Date info */}
+                          <div
+                            className="text-[10px] text-muted-foreground"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            Diterima: {formatDateTime(app.createdAt)}
+                          </div>
+
+                          <Separator />
+
+                          {/* Action Area */}
+                          <div className="space-y-2.5">
+                            <div className="space-y-1.5">
+                              <Label htmlFor={`ppkp-comment-${app.id}`} className="text-xs">
+                                Catatan Pemprosesan
+                              </Label>
+                              <Textarea
+                                id={`ppkp-comment-${app.id}`}
+                                value={commentsMap[app.id] || ''}
+                                onChange={(e) => handleCommentChange(app.id, e.target.value)}
+                                placeholder="Masukkan catatan pemprosesan PPKP..."
+                                rows={2}
+                                className="text-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePPKPComplete(app.id);
+                              }}
+                              disabled={isLoading}
+                              className="w-full"
+                              size="sm"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                <Send className="h-4 w-4 mr-2" />
+                              )}
+                              Selesai Pemprosesan & Hantar ke PPL
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="senarai">
+          <SenaraiPermohonan onSelectApp={onSelectApp} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

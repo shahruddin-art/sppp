@@ -151,3 +151,88 @@ Stage Summary:
 - Seed data now includes a REJECTED/DITOLAK sample application
 - After reseeding, the "Ditolak" option will appear in the PLB decision dropdown AND a rejected application will be visible in the "Keputusan Terkini" section
 - Users need to click "Muat Data Contoh" to reseed and see the new sample data
+---
+Task ID: 5
+Agent: Main Agent
+Task: Add Tabs component to PPKP dashboard with "Pemprosesan PPKP" and "Senarai Permohonan" tabs
+
+Work Log:
+- Read current ppkp-dashboard.tsx, kaunter-dashboard.tsx (for tabs pattern reference), and senarai-permohonan.tsx
+- Updated ppkp-dashboard.tsx with the following changes:
+  - Added imports: Tabs, TabsContent, TabsList, TabsTrigger from @/components/ui/tabs
+  - Added import: ClipboardList from lucide-react
+  - Added import: SenaraiPermohonan from @/components/app/senarai-permohonan
+  - Kept Header card and Stats Summary cards OUTSIDE the tabs (always visible)
+  - Wrapped the "Permohonan Menunggu" section inside a Tabs component with defaultValue="pemprosesan"
+  - Tab 1 ("pemprosesan"): Contains the existing "Permohonan Menunggu" section with FolderOpen icon
+  - Tab 2 ("senarai"): Contains the shared SenaraiPermohonan component with ClipboardList icon
+  - Used the same Tabs pattern as the Kaunter dashboard (TabsList with w-full sm:w-auto, TabsTrigger with gap-1.5)
+  - Passed onSelectApp prop from PPKPDashboard to SenaraiPermohonan
+  - All existing state management, filtering logic, and action handling preserved intact
+- Lint check passed with no errors
+- Dev server running correctly
+
+Stage Summary:
+- PPKP dashboard now has a Tabs component with two tabs: "Pemprosesan" and "Senarai Permohonan"
+- Header and stats cards remain always visible above the tabs
+- Tab 1 contains the existing PPKP processing workflow (Permohonan Menunggu)
+- Tab 2 contains the shared SenaraiPermohonan component for viewing all applications
+- Pattern matches the Kaunter dashboard's tabs implementation
+---
+Task ID: 4
+Agent: Subagent
+Task: Add Tabs component with "Ulasan PPL" and "Senarai Permohonan" tabs to PPL dashboard
+
+Work Log:
+- Read current ppl-dashboard.tsx and senarai-permohonan.tsx to understand existing code
+- Confirmed Tabs component exists at src/components/ui/tabs.tsx
+- Confirmed SenaraiPermohonan component exists at src/components/app/senarai-permohonan.tsx (default export)
+- Updated ppl-dashboard.tsx with the following changes:
+  - Added imports: Tabs, TabsContent, TabsList, TabsTrigger from @/components/ui/tabs
+  - Added import: SenaraiPermohonan from @/components/app/senarai-permohonan (default import)
+  - Added import: ClipboardList icon from lucide-react
+  - Kept header card and stats summary cards OUTSIDE the tabs (always visible)
+  - Wrapped the "Fail Menunggu Ulasan" section inside TabsContent value="ulasan"
+  - Added TabsContent value="senarai" with SenaraiPermohonan component passing onSelectApp prop
+  - TabsList has two TabsTrigger: "Ulasan" (with MessageSquare icon) and "Senarai Permohonan" (with ClipboardList icon)
+  - Tabs defaultValue is "ulasan"
+  - All existing state management, filtering logic, and action handling preserved intact
+- Fixed import: SenaraiPermohonan uses default export, so changed from named import to default import
+- Ran lint check — passed with no errors
+- Verified dev server running correctly
+
+Stage Summary:
+- PPL dashboard now has a Tabs component with two tabs
+- "Ulasan PPL" tab contains the existing "Fail Menunggu Ulasan" review section
+- "Senarai Permohonan" tab contains the shared SenaraiPermohonan component for viewing all applications
+- Header and stats cards remain always visible above the tabs
+- All existing functionality preserved
+---
+Task ID: 5
+Agent: Subagent
+Task: Add Tabs component with "Keputusan PLB" and "Senarai Permohonan" tabs to PLB dashboard
+
+Work Log:
+- Read worklog.md to understand previous agents' work (Tasks 1-4 already completed)
+- Read current plb-dashboard.tsx to understand existing structure
+- Confirmed Tabs component exists at src/components/ui/tabs.tsx (exports Tabs, TabsList, TabsTrigger, TabsContent)
+- Confirmed SenaraiPermohonan component exists at src/components/app/senarai-permohonan.tsx (default export, takes onSelectApp prop)
+- Updated plb-dashboard.tsx with the following changes:
+  - Added imports: Tabs, TabsContent, TabsList, TabsTrigger from @/components/ui/tabs
+  - Added import: SenaraiPermohonan from @/components/app/senarai-permohonan (default import)
+  - Added import: ClipboardList icon from lucide-react
+  - Kept Header card and Stats Summary cards OUTSIDE the tabs (always visible)
+  - Wrapped both "Fail Menunggu Keputusan" AND "Keputusan Terkini" sections inside TabsContent value="keputusan"
+  - Added TabsContent value="senarai" with SenaraiPermohonan component passing onSelectApp prop
+  - TabsList has two TabsTrigger: "Keputusan" (with Gavel icon) and "Senarai Permohonan" (with ClipboardList icon)
+  - Tabs defaultValue is "keputusan"
+  - All existing state management, filtering logic, and action handling preserved intact
+- Ran lint check — passed with no errors
+- Verified dev server running correctly
+
+Stage Summary:
+- PLB dashboard now has a Tabs component with two tabs
+- "Keputusan PLB" tab contains both "Fail Menunggu Keputusan" and "Keputusan Terkini" sections
+- "Senarai Permohonan" tab contains the shared SenaraiPermohonan component for viewing all applications
+- Header and stats cards remain always visible above the tabs
+- All existing functionality preserved

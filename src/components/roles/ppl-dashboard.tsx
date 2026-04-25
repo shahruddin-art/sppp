@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SenaraiPermohonan from '@/components/app/senarai-permohonan';
 import {
   FileText,
   Clock,
@@ -19,6 +21,7 @@ import {
   User,
   MessageSquare,
   RefreshCw,
+  ClipboardList,
 } from 'lucide-react';
 import {
   formatStatus,
@@ -230,184 +233,204 @@ export default function PPLDashboard({ user, onSelectApp }: PPLDashboardProps) {
         </Card>
       </div>
 
-      {/* Fail Menunggu Ulasan */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <FileText className="h-4 w-4 text-teal-600" />
-          <h3 className="font-semibold text-sm">Fail Menunggu Ulasan</h3>
-          <Badge variant="outline" className="text-[10px] bg-teal-50">
-            {applications.length} fail
-          </Badge>
-        </div>
+      {/* Tabs */}
+      <Tabs defaultValue="ulasan" className="w-full">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="ulasan" className="gap-1.5">
+            <MessageSquare className="h-4 w-4" />
+            Ulasan
+          </TabsTrigger>
+          <TabsTrigger value="senarai" className="gap-1.5">
+            <ClipboardList className="h-4 w-4" />
+            Senarai Permohonan
+          </TabsTrigger>
+        </TabsList>
 
-        {loading && !allApplications ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-56 bg-muted rounded" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : applications.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-              <p className="text-muted-foreground font-medium">Tiada fail menunggu ulasan</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Semua fail telah diulas
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <ScrollArea className="max-h-[calc(100vh-320px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-2">
-              {applications.map((app) => {
-                const pplStep = app.steps.find((s) => s.step === 'PPL_REVIEW');
-                const { text: remainingText, isOverdue: stepOverdue, isWarning } = getRemainingTime(
-                  pplStep?.slaDeadline || null
-                );
-                const ppkpComments = getPPKPComments(app);
-                const ulasanValue = ulasanMap[app.id] || '';
-                const isLoading = actionLoadingMap[app.id] || false;
+        <TabsContent value="ulasan">
+          {/* Fail Menunggu Ulasan */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-4 w-4 text-teal-600" />
+              <h3 className="font-semibold text-sm">Fail Menunggu Ulasan</h3>
+              <Badge variant="outline" className="text-[10px] bg-teal-50">
+                {applications.length} fail
+              </Badge>
+            </div>
 
-                return (
-                  <Card
-                    key={app.id}
-                    className={`border-l-4 transition-all hover:shadow-md cursor-pointer ${getSlaBorderClass(stepOverdue, isWarning)}`}
-                  >
-                    <CardContent className="p-4 space-y-3">
-                      {/* Card Header */}
-                      <div
-                        className="flex items-start justify-between"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-sm truncate">{app.applicantName}</p>
-                          <p className="text-xs text-muted-foreground">{app.referenceNo}</p>
-                        </div>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${getStatusColor(app.status)}`}>
-                          {formatStatus(app.status)}
-                        </Badge>
-                      </div>
-
-                      {/* Tags */}
-                      <div
-                        className="flex flex-wrap gap-1.5"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
-                          Zon {app.zone}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
-                          {app.applicationTypeLabel}
-                        </Badge>
-                        {app.fileNumber && (
-                          <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
-                            {app.fileNumber}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* SLA Countdown */}
-                      <div
-                        className={`rounded-md p-2.5 ${
-                          stepOverdue
-                            ? 'bg-red-50 border border-red-200'
-                            : isWarning
-                            ? 'bg-amber-50 border border-amber-200'
-                            : 'bg-emerald-50 border border-emerald-200'
-                        }`}
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {stepOverdue ? (
-                              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-                            ) : (
-                              <Clock className="h-4 w-4 text-emerald-500 shrink-0" />
-                            )}
-                            <span className="text-xs font-medium">SLA PPL (3 hari)</span>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${getSlaBadgeClass(stepOverdue, isWarning)}`}
-                          >
-                            {remainingText}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* PPKP Comments */}
-                      <div
-                        className="rounded-md bg-violet-50 border border-violet-100 p-2.5"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        <p className="text-[10px] font-medium text-violet-700 mb-1">
-                          Catatan PPKP:
-                        </p>
-                        <p className="text-xs text-violet-800 italic line-clamp-2">
-                          {ppkpComments}
-                        </p>
-                      </div>
-
-                      {/* Staff & Date info */}
-                      <div
-                        className="flex items-center justify-between text-[10px] text-muted-foreground"
-                        onClick={() => onSelectApp(app.id)}
-                      >
-                        {app.ppkpStaff && (
-                          <span>
-                            {formatStaffRole(app.ppkpStaff.role)}: {app.ppkpStaff.name}
-                          </span>
-                        )}
-                        <span>{formatDateTime(app.createdAt)}</span>
-                      </div>
-
-                      <Separator />
-
-                      {/* Action Area */}
-                      <div className="space-y-2.5">
-                        <div className="space-y-1.5">
-                          <Label htmlFor={`ppl-ulasan-${app.id}`} className="text-xs">
-                            Ulasan PPL *
-                          </Label>
-                          <Textarea
-                            id={`ppl-ulasan-${app.id}`}
-                            value={ulasanValue}
-                            onChange={(e) => handleUlasanChange(app.id, e.target.value)}
-                            placeholder="Masukkan ulasan PPL..."
-                            rows={3}
-                            className="text-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePPLReviewComplete(app.id);
-                          }}
-                          disabled={isLoading || !ulasanValue.trim()}
-                          className="w-full"
-                          size="sm"
-                        >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Send className="h-4 w-4 mr-2" />
-                          )}
-                          Hantar Ulasan ke PLB
-                        </Button>
-                      </div>
+            {loading && !allApplications ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-4">
+                      <div className="h-56 bg-muted rounded" />
                     </CardContent>
                   </Card>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        )}
-      </div>
+                ))}
+              </div>
+            ) : applications.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
+                  <p className="text-muted-foreground font-medium">Tiada fail menunggu ulasan</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Semua fail telah diulas
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <ScrollArea className="max-h-[calc(100vh-320px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-2">
+                  {applications.map((app) => {
+                    const pplStep = app.steps.find((s) => s.step === 'PPL_REVIEW');
+                    const { text: remainingText, isOverdue: stepOverdue, isWarning } = getRemainingTime(
+                      pplStep?.slaDeadline || null
+                    );
+                    const ppkpComments = getPPKPComments(app);
+                    const ulasanValue = ulasanMap[app.id] || '';
+                    const isLoading = actionLoadingMap[app.id] || false;
+
+                    return (
+                      <Card
+                        key={app.id}
+                        className={`border-l-4 transition-all hover:shadow-md cursor-pointer ${getSlaBorderClass(stepOverdue, isWarning)}`}
+                      >
+                        <CardContent className="p-4 space-y-3">
+                          {/* Card Header */}
+                          <div
+                            className="flex items-start justify-between"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm truncate">{app.applicantName}</p>
+                              <p className="text-xs text-muted-foreground">{app.referenceNo}</p>
+                            </div>
+                            <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${getStatusColor(app.status)}`}>
+                              {formatStatus(app.status)}
+                            </Badge>
+                          </div>
+
+                          {/* Tags */}
+                          <div
+                            className="flex flex-wrap gap-1.5"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
+                              Zon {app.zone}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
+                              {app.applicationTypeLabel}
+                            </Badge>
+                            {app.fileNumber && (
+                              <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
+                                {app.fileNumber}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* SLA Countdown */}
+                          <div
+                            className={`rounded-md p-2.5 ${
+                              stepOverdue
+                                ? 'bg-red-50 border border-red-200'
+                                : isWarning
+                                ? 'bg-amber-50 border border-amber-200'
+                                : 'bg-emerald-50 border border-emerald-200'
+                            }`}
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {stepOverdue ? (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                                ) : (
+                                  <Clock className="h-4 w-4 text-emerald-500 shrink-0" />
+                                )}
+                                <span className="text-xs font-medium">SLA PPL (3 hari)</span>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] ${getSlaBadgeClass(stepOverdue, isWarning)}`}
+                              >
+                                {remainingText}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* PPKP Comments */}
+                          <div
+                            className="rounded-md bg-violet-50 border border-violet-100 p-2.5"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            <p className="text-[10px] font-medium text-violet-700 mb-1">
+                              Catatan PPKP:
+                            </p>
+                            <p className="text-xs text-violet-800 italic line-clamp-2">
+                              {ppkpComments}
+                            </p>
+                          </div>
+
+                          {/* Staff & Date info */}
+                          <div
+                            className="flex items-center justify-between text-[10px] text-muted-foreground"
+                            onClick={() => onSelectApp(app.id)}
+                          >
+                            {app.ppkpStaff && (
+                              <span>
+                                {formatStaffRole(app.ppkpStaff.role)}: {app.ppkpStaff.name}
+                              </span>
+                            )}
+                            <span>{formatDateTime(app.createdAt)}</span>
+                          </div>
+
+                          <Separator />
+
+                          {/* Action Area */}
+                          <div className="space-y-2.5">
+                            <div className="space-y-1.5">
+                              <Label htmlFor={`ppl-ulasan-${app.id}`} className="text-xs">
+                                Ulasan PPL *
+                              </Label>
+                              <Textarea
+                                id={`ppl-ulasan-${app.id}`}
+                                value={ulasanValue}
+                                onChange={(e) => handleUlasanChange(app.id, e.target.value)}
+                                placeholder="Masukkan ulasan PPL..."
+                                rows={3}
+                                className="text-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePPLReviewComplete(app.id);
+                              }}
+                              disabled={isLoading || !ulasanValue.trim()}
+                              className="w-full"
+                              size="sm"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                <Send className="h-4 w-4 mr-2" />
+                              )}
+                              Hantar Ulasan ke PLB
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="senarai">
+          <SenaraiPermohonan onSelectApp={onSelectApp} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
