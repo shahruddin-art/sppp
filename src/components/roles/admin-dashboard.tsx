@@ -49,6 +49,7 @@ import {
   Plus,
   Pencil,
   Ban,
+  Trash2,
   Search,
   Loader2,
   MapPin,
@@ -167,6 +168,7 @@ function PenggunaTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [deactivateUser, setDeactivateUser] = useState<UserRow | null>(null);
+  const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Form state
@@ -276,6 +278,23 @@ function PenggunaTab() {
       toast.error(err.message || 'Ralat semasa menyahaktifkan');
     } finally {
       setDeactivateUser(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteUser) return;
+    try {
+      const res = await fetch(`/api/admin/users/${deleteUser.id}?permanent=true`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Gagal memadam pengguna');
+      }
+      toast.success('Pengguna berjaya dipadam secara kekal');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa memadam');
+    } finally {
+      setDeleteUser(null);
     }
   };
 
@@ -417,11 +436,20 @@ function PenggunaTab() {
                               size="sm"
                               onClick={() => setDeactivateUser(u)}
                               title="Nyahaktif"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                             >
                               <Ban className="h-4 w-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteUser(u)}
+                            title="Padam"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -567,8 +595,33 @@ function PenggunaTab() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeactivate} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDeactivate} className="bg-amber-600 hover:bg-amber-700">
               Nyahaktif
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Permanently Confirmation */}
+      <AlertDialog open={!!deleteUser} onOpenChange={(open) => { if (!open) setDeleteUser(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">⚠️ Padam Pengguna Secara Kekal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Adakah anda pasti ingin memadam pengguna <strong>{deleteUser?.name}</strong> ({deleteUser?.username}) secara kekal?
+              Tindakan ini <strong>tidak boleh dibatalkan</strong>. Semua data pengguna ini akan dipadamkan daripada sistem.
+              {deleteUser?.isActive && (
+                <span className="block mt-2 text-amber-600">
+                  💡 Tip: Anda boleh menyahaktifkan pengguna ini sebagai alternatif yang lebih selamat.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Padam Kekal
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
