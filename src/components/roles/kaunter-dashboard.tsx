@@ -514,7 +514,7 @@ function SenaraiPermohonan({
                     )}
                   </div>
 
-                  {/* Current step info */}
+                  {/* Current step info - simplified for Kaunter (no action required) */}
                   {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && currentStepData && (
                     <div
                       className={`rounded-md p-2 mb-3 ${
@@ -522,21 +522,23 @@ function SenaraiPermohonan({
                           ? 'bg-red-50 border border-red-200'
                           : isWarning
                             ? 'bg-amber-50 border border-amber-200'
-                            : 'bg-sky-50 border border-sky-200'
+                            : 'bg-gray-50 border border-gray-200'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         {stepOverdue ? (
                           <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
                         ) : (
-                          <Clock className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                          <Clock className="h-3.5 w-3.5 text-gray-500 shrink-0" />
                         )}
-                        <span className="text-xs font-medium">{app.currentStepName || 'Memproses'}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {app.currentStepName || 'Memproses'}
+                        </span>
                       </div>
                       {currentStepData.slaDeadline && (
                         <p
                           className={`text-[10px] mt-1 ml-5 ${
-                            stepOverdue ? 'text-red-600' : isWarning ? 'text-amber-600' : 'text-sky-600'
+                            stepOverdue ? 'text-red-600' : isWarning ? 'text-amber-600' : 'text-muted-foreground'
                           }`}
                         >
                           {remainingText}

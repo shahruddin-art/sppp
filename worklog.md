@@ -81,3 +81,22 @@ Stage Summary:
 - PT users can only process applications in their assigned zone
 - Session authentication is required for all API endpoints
 - Frontend also hides action buttons for unauthorized users (defense-in-depth)
+---
+Task ID: 2
+Agent: Main Agent
+Task: Remove "Tindakan Diperlukan" view table from Kaunter user role display
+
+Work Log:
+- Reviewed application-detail.tsx and kaunter-dashboard.tsx for Kaunter-specific display
+- Identified that Kaunter users saw either "Tindakan Diperlukan" (Action Required) panel or "Tiada kebenaran tindakan" (No Permission) notice in application detail view — both inappropriate for Kaunter role
+- In application-detail.tsx: Added `user.role !== 'KAUNTER'` condition to hide both "Tindakan Diperlukan" action panel and "Tiada kebenaran tindakan" notice for Kaunter users
+- In application-detail.tsx: Added a simplified "Status Semasa" (Current Status) info card for Kaunter users that shows which role is processing the application, without any action-oriented language
+- In kaunter-dashboard.tsx: Simplified the current step info box in application list cards for Kaunter — changed from action-oriented blue styling (`bg-sky-50`, `text-sky-500`) to neutral gray styling (`bg-gray-50`, `text-gray-500`, `text-muted-foreground`) to remove the implication that Kaunter needs to take action
+- Ran lint check — passed with no errors
+- Verified dev server running correctly
+
+Stage Summary:
+- Kaunter users no longer see "Tindakan Diperlukan" (Action Required) card in application detail view
+- Kaunter users no longer see "Tiada kebenaran tindakan" (No Permission) notice in application detail view
+- Kaunter users now see a simple "Status Semasa" info card showing which role is processing
+- Kaunter dashboard application list cards now use neutral styling for current step info instead of action-oriented blue styling

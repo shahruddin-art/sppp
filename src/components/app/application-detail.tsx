@@ -407,8 +407,8 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
             </CardContent>
           </Card>
 
-          {/* Action Panel - Only shown if user has permission for the current step */}
-          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && canSeeActionPanel && (
+          {/* Action Panel - Only shown if user has permission for the current step. Kaunter users never see this. */}
+          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && canSeeActionPanel && user.role !== 'KAUNTER' && (
             <Card className="border-sky-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-sky-700">
@@ -573,8 +573,8 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
             </Card>
           )}
 
-          {/* No Permission Notice - shown when user views an application but doesn't have action permission */}
-          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && !canSeeActionPanel && (
+          {/* No Permission Notice - shown when user views an application but doesn't have action permission. Kaunter users never see this. */}
+          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && !canSeeActionPanel && user.role !== 'KAUNTER' && (
             <Card className="border-gray-200 bg-gray-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 text-muted-foreground">
@@ -583,6 +583,23 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
                     <p className="text-sm font-medium">Tiada kebenaran tindakan</p>
                     <p className="text-xs mt-0.5">
                       Langkah semasa ({formatStepName(activeStep.step)}) memerlukan peranan {activeStep.step === 'PT_FILE_OPENING' || activeStep.step === 'PT_FILE_REGISTRATION' ? 'PT' : activeStep.step === 'PPKP_PROCESSING' ? 'PPKP' : activeStep.step === 'PPL_REVIEW' ? 'PPL' : 'PLB'} untuk melakukan tindakan.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Status Info for Kaunter - simplified view without action panel */}
+          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && user.role === 'KAUNTER' && (
+            <Card className="border-sky-100 bg-sky-50/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-sky-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-sky-800">Status Semasa</p>
+                    <p className="text-xs mt-0.5 text-sky-700">
+                      Permohonan ini sedang di proses oleh {activeStep.step === 'PT_FILE_OPENING' || activeStep.step === 'PT_FILE_REGISTRATION' ? 'PT' : activeStep.step === 'PPKP_PROCESSING' ? 'PPKP' : activeStep.step === 'PPL_REVIEW' ? 'PPL' : 'PLB'} — {formatStepName(activeStep.step)}
                     </p>
                   </div>
                 </div>
