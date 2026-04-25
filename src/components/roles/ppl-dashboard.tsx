@@ -87,7 +87,7 @@ export default function PPLDashboard({ user, onSelectApp }: PPLDashboardProps) {
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<string, boolean>>({});
 
   const isPPLL = user.role === 'PPL_L';
-  const roleLabel = isPPLL ? 'PPL(L)' : 'PPL(P)';
+  const roleLabel = isPPLL ? 'PPL(L) - Penolong Pengarah Pelesenan' : 'PPL(P) - Penolong Pengarah Pelesenan';
   const assignmentLabel = isPPLL
     ? 'Menerima fail daripada PPKP(L)'
     : 'Menerima fail daripada PPKP(P)';

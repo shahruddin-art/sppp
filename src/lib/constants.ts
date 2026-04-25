@@ -40,12 +40,12 @@ export const APPLICATION_STATUSES = {
 // Staff roles
 export const STAFF_ROLES = {
   KAUNTER: { label: 'Kaunter' },
-  PT: { label: 'Pegawai Tadbir (PT)' },
+  PT: { label: 'Pembantu Tadbir (PT)' },
   PPKP_L: { label: 'PPKP(L)' },
   PPKP_P: { label: 'PPKP(P)' },
-  PPL_L: { label: 'PPL(L)' },
-  PPL_P: { label: 'PPL(P)' },
-  PLB: { label: 'Pegawai Lesen & Biz (PLB)' },
+  PPL_L: { label: 'PPL(L) - Penolong Pengarah Pelesenan' },
+  PPL_P: { label: 'PPL(P) - Penolong Pengarah Pelesenan' },
+  PLB: { label: 'Pengarah Pelesenan Bandaraya (PLB)' },
 } as const;
 
 // Zones

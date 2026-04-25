@@ -283,11 +283,11 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                   </Badge>
                   <ArrowRight className="h-3 w-3 text-muted-foreground" />
                   <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
-                    {pplRoute === 'PPL_L' ? 'PPL(L)' : 'PPL(P)'}
+                    {pplRoute === 'PPL_L' ? 'PPL(L) - Penolong Pengarah' : 'PPL(P) - Penolong Pengarah'}
                   </Badge>
                   <ArrowRight className="h-3 w-3 text-muted-foreground" />
                   <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                    PLB
+                    PLB - Pengarah Pelesenan Bandaraya
                   </Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2">
@@ -406,7 +406,7 @@ function SenaraiPermohonan({
                   <SelectItem value="PT_PROCESSING">PT Memproses</SelectItem>
                   <SelectItem value="PPKP_PROCESSING">PPKP Memproses</SelectItem>
                   <SelectItem value="PPL_REVIEW">PPL Mengulas</SelectItem>
-                  <SelectItem value="PLB_DECISION">Keputusan PLB</SelectItem>
+                  <SelectItem value="PLB_DECISION">Pengarah Pelesenan Bandaraya (PLB)</SelectItem>
                   <SelectItem value="COMPLETED">Selesai</SelectItem>
                   <SelectItem value="REJECTED">Ditolak</SelectItem>
                 </SelectContent>

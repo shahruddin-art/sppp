@@ -120,7 +120,7 @@ export default function ApplicationList({ onSelect }: ApplicationListProps) {
                   <SelectItem value="PT_PROCESSING">PT Memproses</SelectItem>
                   <SelectItem value="PPKP_PROCESSING">PPKP Memproses</SelectItem>
                   <SelectItem value="PPL_REVIEW">PPL Mengulas</SelectItem>
-                  <SelectItem value="PLB_DECISION">Keputusan PLB</SelectItem>
+                  <SelectItem value="PLB_DECISION">Pengarah Pelesenan Bandaraya (PLB)</SelectItem>
                   <SelectItem value="COMPLETED">Selesai</SelectItem>
                 </SelectContent>
               </Select>

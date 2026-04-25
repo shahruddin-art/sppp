@@ -217,7 +217,7 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-orange-900">
-                  Pegawai Lesen Bandar
+                  Pengarah Pelesenan Bandaraya
                 </h2>
                 <p className="text-sm text-orange-600">
                   Menerima fail yang telah diulas oleh PPL

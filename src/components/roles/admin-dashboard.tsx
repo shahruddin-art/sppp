@@ -666,7 +666,7 @@ function KonfigurasiTab() {
                 </div>
                 <div>
                   <p className="font-semibold text-emerald-800">PPKP(L) - Lesen</p>
-                  <p className="text-xs text-emerald-600">Diarahkan ke PPL(L)</p>
+                  <p className="text-xs text-emerald-600">Diarahkan ke PPL(L) - Penolong Pengarah</p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -689,7 +689,7 @@ function KonfigurasiTab() {
                 </div>
                 <div>
                   <p className="font-semibold text-teal-800">PPKP(P) - Pasar</p>
-                  <p className="text-xs text-teal-600">Diarahkan ke PPL(P)</p>
+                  <p className="text-xs text-teal-600">Diarahkan ke PPL(P) - Penolong Pengarah</p>
                 </div>
               </div>
               <div className="space-y-2">

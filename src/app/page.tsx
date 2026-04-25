@@ -37,9 +37,9 @@ const ROLE_LABELS: Record<string, string> = {
   PT: 'Pembantu Tadbir (PT)',
   PPKP_L: 'PPKP(L)',
   PPKP_P: 'PPKP(P)',
-  PPL_L: 'PPL(L)',
-  PPL_P: 'PPL(P)',
-  PLB: 'Pegawai Lesen Bandar (PLB)',
+  PPL_L: 'PPL(L) - Penolong Pengarah Pelesenan',
+  PPL_P: 'PPL(P) - Penolong Pengarah Pelesenan',
+  PLB: 'Pengarah Pelesenan Bandaraya (PLB)',
 };
 
 const ROLE_COLORS: Record<string, string> = {

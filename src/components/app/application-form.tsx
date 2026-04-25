@@ -199,11 +199,11 @@ export default function ApplicationForm() {
                   </Badge>
                   <span className="text-xs text-muted-foreground">→</span>
                   <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
-                    {pplRoute === 'PPL_L' ? 'PPL(L)' : 'PPL(P)'}
+                    {pplRoute === 'PPL_L' ? 'PPL(L) - Penolong Pengarah' : 'PPL(P) - Penolong Pengarah'}
                   </Badge>
                   <span className="text-xs text-muted-foreground">→</span>
                   <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                    PLB
+                    PLB - Pengarah Pelesenan Bandaraya
                   </Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2">

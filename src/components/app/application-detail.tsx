@@ -247,7 +247,7 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
               )}
               {app.plbStaff && (
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">PLB</span>
+                  <span className="text-muted-foreground">PLB - Pengarah Pelesenan Bandaraya</span>
                   <p className="font-medium">{app.plbStaff.name}</p>
                 </div>
               )}

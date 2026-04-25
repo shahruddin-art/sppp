@@ -224,11 +224,11 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center justify-center gap-2">
             {[
               { label: 'Kaunter', desc: 'Penerimaan', sla: '-' },
-              { label: 'PT', desc: 'Pembukaan Fail', sla: '3 hari' },
+              { label: 'PT', desc: 'Pembantu Tadbir', sla: '3 hari' },
               { label: 'PT', desc: 'Daftar No. Fail', sla: 'Segera' },
               { label: 'PPKP(L/P)', desc: 'Pemprosesan', sla: '4 hari' },
-              { label: 'PPL(L/P)', desc: 'Ulasan', sla: '3 hari' },
-              { label: 'PLB', desc: 'Keputusan', sla: '-' },
+              { label: 'PPL(L/P)', desc: 'Penolong Pengarah Pelesenan', sla: '3 hari' },
+              { label: 'PLB', desc: 'Pengarah Pelesenan Bandaraya', sla: '-' },
             ].map((item, i, arr) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="rounded-lg border bg-card p-3 text-center min-w-[100px]">
@@ -249,17 +249,17 @@ export default function Dashboard() {
               <p className="text-[10px] text-emerald-600 mt-1">
                 G1, G1/P, G7, G8, G9, G11, Papan Iklan
               </p>
-              <p className="text-[10px] text-emerald-600">→ PPL(L)</p>
+              <p className="text-[10px] text-emerald-600">→ PPL(L) - Penolong Pengarah</p>
             </div>
             <div className="rounded-lg bg-teal-50 border border-teal-200 p-3">
               <p className="text-xs font-semibold text-teal-700">PPKP(P) - Pasar</p>
               <p className="text-[10px] text-teal-600 mt-1">
                 G2, G3, Permit Sementara
               </p>
-              <p className="text-[10px] text-teal-600">→ PPL(P)</p>
+              <p className="text-[10px] text-teal-600">→ PPL(P) - Penolong Pengarah</p>
             </div>
             <div className="rounded-lg bg-orange-50 border border-orange-200 p-3">
-              <p className="text-xs font-semibold text-orange-700">Keputusan PLB</p>
+              <p className="text-xs font-semibold text-orange-700">Pengarah Pelesenan Bandaraya</p>
               <p className="text-[10px] text-orange-600 mt-1">
                 Simpan Fail / Jabatan Kesihatan / Jabatan Perancang Bandar
               </p>
