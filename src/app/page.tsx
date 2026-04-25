@@ -166,7 +166,7 @@ export default function HomePage() {
           </div>
         </header>
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-5">
-          <ApplicationDetail applicationId={selectedAppId} onBack={handleBackFromDetail} />
+          <ApplicationDetail applicationId={selectedAppId} onBack={handleBackFromDetail} user={user} />
         </main>
         <footer className="mt-auto border-t bg-white py-3">
           <div className="max-w-7xl mx-auto px-4">

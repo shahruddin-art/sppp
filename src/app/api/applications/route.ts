@@ -1,19 +1,33 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateReferenceNo, getPPKPRole, getPPLRole, APPLICATION_TYPES, WORKFLOW_STEPS } from '@/lib/constants';
+import { requireAuth, canCreateApplication, canListApplications, getApplicationFilterForRole } from '@/lib/rbac';
 
 // GET /api/applications - List all applications with filters
 export async function GET(request: Request) {
   try {
+    // ── Auth check ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    const user = authResult.user;
+
+    if (!canListApplications(user.role)) {
+      return NextResponse.json({ error: 'Anda tidak mempunyai kebenaran untuk melihat senarai permohonan.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const zone = searchParams.get('zone');
     const type = searchParams.get('type');
     const search = searchParams.get('search');
 
-    const where: any = {};
+    // Build role-based filter
+    const roleFilter = getApplicationFilterForRole(user);
+
+    const where: any = { ...roleFilter };
     if (status) where.status = status;
-    if (zone) where.zone = zone;
+    // Enforce zone filter: PT users can only see their zone, ignore client-side zone param for other zones
+    if (zone && user.role !== 'PT') where.zone = zone;
     if (type) where.applicationType = type;
     if (search) {
       where.OR = [
@@ -66,9 +80,21 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/applications - Create new application
+// POST /api/applications - Create new application (KAUNTER only)
 export async function POST(request: Request) {
   try {
+    // ── Auth check: Only KAUNTER can create applications ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    const user = authResult.user;
+
+    if (!canCreateApplication(user.role)) {
+      return NextResponse.json(
+        { error: 'Hanya pengguna Kaunter boleh mendaftar permohonan baharu.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { applicantName, applicantIc, applicantPhone, applicantAddress, applicationType, zone } = body;
 
@@ -86,7 +112,8 @@ export async function POST(request: Request) {
     const pplRole = getPPLRole(ppkpRole);
     const pplStaff = await db.user.findFirst({ where: { role: pplRole, isActive: true } });
     const plbStaff = await db.user.findFirst({ where: { role: 'PLB', isActive: true } });
-    const kaunterStaff = await db.user.findFirst({ where: { role: 'KAUNTER', isActive: true } });
+    // Use the actual logged-in KAUNTER user (not the first KAUNTER found)
+    const kaunterStaffId = user.id;
 
     const now = new Date();
     const ptSlaDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
@@ -109,19 +136,19 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create workflow steps
+    // Create workflow steps — KAUNTER_RECEIPT uses the actual logged-in user
     await db.workflowStep.createMany({
       data: [
         {
           applicationId: application.id,
           step: 'KAUNTER_RECEIPT',
           status: 'COMPLETED',
-          assignedToId: kaunterStaff?.id || null,
+          assignedToId: kaunterStaffId,
           startedAt: now,
           completedAt: now,
           slaDays: 0,
           slaDeadline: now,
-          comments: 'Permohonan diterima di kaunter',
+          comments: `Permohonan diterima di kaunter oleh ${user.name}`,
         },
         {
           applicationId: application.id,

@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { WORKFLOW_STEPS, APPLICATION_TYPES } from '@/lib/constants';
+import { requireAuth, canViewPerformance } from '@/lib/rbac';
 
 export async function GET(request: Request) {
   try {
+    // ── Auth check ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    if (!canViewPerformance(authResult.user.role)) {
+      return NextResponse.json({ error: 'Anda tidak mempunyai kebenaran untuk melihat data prestasi.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30'; // days
 

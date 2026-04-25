@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { WORKFLOW_STEPS, APPLICATION_TYPES } from '@/lib/constants';
+import { requireAuth, canListApplications } from '@/lib/rbac';
 
 // GET /api/applications/[id] - Get application detail
 export async function GET(
@@ -8,6 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // ── Auth check ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    if (!canListApplications(authResult.user.role)) {
+      return NextResponse.json({ error: 'Anda tidak mempunyai kebenaran.' }, { status: 403 });
+    }
+
     const { id } = await params;
     const application = await db.application.findUnique({
       where: { id },

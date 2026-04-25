@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAuth, canViewDashboard } from '@/lib/rbac';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // ── Auth check ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    if (!canViewDashboard(authResult.user.role)) {
+      return NextResponse.json({ error: 'Anda tidak mempunyai kebenaran.' }, { status: 403 });
+    }
+
     const now = new Date();
 
     // Get all applications with their steps and staff

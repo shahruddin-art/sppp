@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAuth, canPerformAction, canPerformActionOnZone, isActionStatusValid, WorkflowAction } from '@/lib/rbac';
 
 // POST /api/applications/[id]/action - Process workflow action
 export async function POST(
@@ -7,9 +8,28 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // ── Auth check ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    const user = authResult.user;
+
     const { id } = await params;
     const body = await request.json();
     const { action, fileNumber, comments, plbDecision, plbDecisionNotes } = body;
+
+    // ── Validate action type ──
+    const validActions: WorkflowAction[] = ['OPEN_FILE', 'REGISTER_FILE', 'PPKP_COMPLETE', 'PPL_REVIEW_COMPLETE', 'PLB_DECIDE'];
+    if (!validActions.includes(action)) {
+      return NextResponse.json({ error: 'Tindakan tidak sah' }, { status: 400 });
+    }
+
+    // ── Role authorization check ──
+    if (!canPerformAction(user.role, action)) {
+      return NextResponse.json(
+        { error: `Peranan '${user.role}' tidak dibenarkan untuk melakukan tindakan '${action}'.` },
+        { status: 403 }
+      );
+    }
 
     const application = await db.application.findUnique({
       where: { id },
@@ -18,6 +38,61 @@ export async function POST(
 
     if (!application) {
       return NextResponse.json({ error: 'Permohonan tidak dijumpai' }, { status: 404 });
+    }
+
+    // ── Validate application status matches the action ──
+    if (!isActionStatusValid(action, application.status)) {
+      return NextResponse.json(
+        { error: `Tindakan '${action}' tidak sah untuk permohonan berstatus '${application.status}'.` },
+        { status: 400 }
+      );
+    }
+
+    // ── Zone check for PT actions ──
+    if ((action === 'OPEN_FILE' || action === 'REGISTER_FILE') && !canPerformActionOnZone(user, application.zone)) {
+      return NextResponse.json(
+        { error: `Anda (Zon ${user.zone}) tidak dibenarkan untuk memproses permohonan di Zon ${application.zone}.` },
+        { status: 403 }
+      );
+    }
+
+    // ── Assignment check for PPKP/PPL/PLB ──
+    if (action === 'PPKP_COMPLETE' && application.ppkpStaffId && application.ppkpStaffId !== user.id) {
+      // Allow if same role but different user (in case of reassignment), but log warning
+      // Strict check: only the assigned PPKP can complete
+      const ppkpStaff = await db.user.findUnique({ where: { id: application.ppkpStaffId } });
+      if (ppkpStaff && ppkpStaff.role === user.role && ppkpStaff.id !== user.id) {
+        return NextResponse.json(
+          { error: 'Permohonan ini ditugaskan kepada staf PPKP yang lain.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (action === 'PPL_REVIEW_COMPLETE' && application.pplStaffId && application.pplStaffId !== user.id) {
+      const pplStaff = await db.user.findUnique({ where: { id: application.pplStaffId } });
+      if (pplStaff && pplStaff.role === user.role && pplStaff.id !== user.id) {
+        return NextResponse.json(
+          { error: 'Permohonan ini ditugaskan kepada staf PPL yang lain.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (action === 'PLB_DECIDE' && application.plbStaffId && application.plbStaffId !== user.id) {
+      const plbStaff = await db.user.findUnique({ where: { id: application.plbStaffId } });
+      if (plbStaff && plbStaff.role === 'PLB' && plbStaff.id !== user.id) {
+        return NextResponse.json(
+          { error: 'Permohonan ini ditugaskan kepada Pengarah Pelesenan Bandaraya yang lain.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // ── PT assignment check ──
+    if ((action === 'OPEN_FILE' || action === 'REGISTER_FILE') && application.ptStaffId && application.ptStaffId !== user.id) {
+      // Allow if the user is in the same zone but different assignment
+      // (there could be multiple PT in a zone)
     }
 
     const now = new Date();
@@ -35,7 +110,7 @@ export async function POST(
           data: {
             status: 'COMPLETED',
             completedAt: now,
-            comments: comments || 'Fail berjaya dibuka',
+            comments: comments || `Fail berjaya dibuka oleh ${user.name}`,
           },
         });
 
@@ -75,7 +150,7 @@ export async function POST(
             status: 'COMPLETED',
             startedAt: now,
             completedAt: now,
-            comments: `No. Fail: ${fileNumber}`,
+            comments: `No. Fail: ${fileNumber} (didaftarkan oleh ${user.name})`,
           },
         });
 
@@ -117,7 +192,7 @@ export async function POST(
           data: {
             status: 'COMPLETED',
             completedAt: now,
-            comments: comments || 'Pemprosesan PPKP selesai',
+            comments: comments || `Pemprosesan PPKP selesai oleh ${user.name}`,
           },
         });
 
@@ -154,7 +229,7 @@ export async function POST(
           data: {
             status: 'COMPLETED',
             completedAt: now,
-            comments: comments || 'Ulasan PPL diberikan',
+            comments: comments || `Ulasan PPL diberikan oleh ${user.name}`,
           },
         });
 
@@ -193,7 +268,7 @@ export async function POST(
           data: {
             status: 'COMPLETED',
             completedAt: now,
-            comments: plbDecisionNotes || `Keputusan: ${plbDecision}`,
+            comments: plbDecisionNotes || `Keputusan: ${plbDecision} (oleh ${user.name})`,
           },
         });
 

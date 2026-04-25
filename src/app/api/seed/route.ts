@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateReferenceNo, getPPKPRole, getPPLRole } from '@/lib/constants';
 import { hashPassword } from '@/lib/auth';
+import { requireAuth, canSeed } from '@/lib/rbac';
 
 // Seed database with sample users and applications
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    // ── Auth check: Only ADMIN can seed ──
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    if (!canSeed(authResult.user.role)) {
+      return NextResponse.json({ error: 'Hanya Pentadbir boleh memuatkan data contoh.' }, { status: 403 });
+    }
+
     // Clear existing data
     await db.workflowStep.deleteMany();
     await db.application.deleteMany();

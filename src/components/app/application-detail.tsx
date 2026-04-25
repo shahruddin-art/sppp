@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ArrowLeft,
   FileText,
@@ -26,6 +25,7 @@ import {
   CircleCheck,
   CircleAlert,
   CircleDot,
+  ShieldAlert,
 } from 'lucide-react';
 import { postData } from '@/hooks/use-fetch';
 import {
@@ -42,6 +42,7 @@ import {
   formatPlbDecision,
 } from '@/lib/formatters';
 import { WORKFLOW_STEPS, PLB_DECISIONS } from '@/lib/constants';
+import { canPerformAction, WorkflowAction } from '@/lib/rbac';
 import { toast } from 'sonner';
 
 interface ApplicationStep {
@@ -91,12 +92,21 @@ interface Application {
   applicationTypeLabel: string;
 }
 
+interface UserInfo {
+  id: string;
+  username: string;
+  role: string;
+  name: string;
+  zone: string | null;
+}
+
 interface ApplicationDetailProps {
   applicationId: string;
   onBack: () => void;
+  user: UserInfo;
 }
 
-export default function ApplicationDetail({ applicationId, onBack }: ApplicationDetailProps) {
+export default function ApplicationDetail({ applicationId, onBack, user }: ApplicationDetailProps) {
   const { data: app, loading, refetch } = useFetch<Application>(`/api/applications/${applicationId}`);
   const [actionLoading, setActionLoading] = useState(false);
   const [fileNumber, setFileNumber] = useState('');
@@ -129,6 +139,16 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
     }
   };
 
+  // ── RBAC: Determine which actions the current user can perform ──
+  const canOpenFile = canPerformAction(user.role, 'OPEN_FILE');
+  const canRegisterFile = canPerformAction(user.role, 'REGISTER_FILE');
+  const canPPKPComplete = canPerformAction(user.role, 'PPKP_COMPLETE');
+  const canPPLReview = canPerformAction(user.role, 'PPL_REVIEW_COMPLETE');
+  const canPLBDecide = canPerformAction(user.role, 'PLB_DECIDE');
+
+  // ── Zone check for PT ──
+  const ptZoneMatch = user.role === 'PT' ? user.zone === app?.zone : true;
+
   if (loading || !app) {
     return (
       <Card>
@@ -144,6 +164,14 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
   }
 
   const activeStep = app.steps.find(s => s.status === 'IN_PROGRESS' || s.status === 'PENDING');
+
+  // ── Determine if the user can see the action panel at all ──
+  const canSeeActionPanel = 
+    (activeStep?.step === 'PT_FILE_OPENING' && canOpenFile && ptZoneMatch) ||
+    (activeStep?.step === 'PT_FILE_REGISTRATION' && canRegisterFile && ptZoneMatch) ||
+    (activeStep?.step === 'PPKP_PROCESSING' && canPPKPComplete) ||
+    (activeStep?.step === 'PPL_REVIEW' && canPPLReview) ||
+    (activeStep?.step === 'PLB_DECISION' && canPLBDecide);
 
   return (
     <div className="space-y-4">
@@ -379,8 +407,8 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
             </CardContent>
           </Card>
 
-          {/* Action Panel */}
-          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && (
+          {/* Action Panel - Only shown if user has permission for the current step */}
+          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && canSeeActionPanel && (
             <Card className="border-sky-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-sky-700">
@@ -393,7 +421,7 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* PT File Opening Action */}
-                {activeStep.step === 'PT_FILE_OPENING' && app.status === 'PENDING_PT' && (
+                {activeStep.step === 'PT_FILE_OPENING' && app.status === 'PENDING_PT' && canOpenFile && (
                   <div className="space-y-3">
                     <div className="rounded-md bg-amber-50 border border-amber-200 p-3">
                       <p className="text-xs text-amber-700">
@@ -401,25 +429,37 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                         Sila buka fail permohonan dalam tempoh SLA (3 hari dari penerimaan).
                       </p>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="openFileComments">Catatan Pembukaan Fail</Label>
-                      <Textarea
-                        id="openFileComments"
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        placeholder="Masukkan catatan pembukaan fail..."
-                        rows={2}
-                      />
-                    </div>
-                    <Button onClick={() => handleAction('OPEN_FILE')} disabled={actionLoading}>
-                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
-                      Buka Fail Permohonan
-                    </Button>
+                    {!ptZoneMatch && (
+                      <div className="rounded-md bg-red-50 border border-red-200 p-3">
+                        <p className="text-xs text-red-700 flex items-center gap-1.5">
+                          <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                          Anda (Zon {user.zone}) tidak dibenarkan memproses permohonan di Zon {app.zone}.
+                        </p>
+                      </div>
+                    )}
+                    {ptZoneMatch && (
+                      <>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="openFileComments">Catatan Pembukaan Fail</Label>
+                          <Textarea
+                            id="openFileComments"
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                            placeholder="Masukkan catatan pembukaan fail..."
+                            rows={2}
+                          />
+                        </div>
+                        <Button onClick={() => handleAction('OPEN_FILE')} disabled={actionLoading}>
+                          {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
+                          Buka Fail Permohonan
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
 
                 {/* PT File Registration Action */}
-                {activeStep.step === 'PT_FILE_REGISTRATION' && app.status === 'PT_PROCESSING' && (
+                {activeStep.step === 'PT_FILE_REGISTRATION' && app.status === 'PT_PROCESSING' && canRegisterFile && (
                   <div className="space-y-3">
                     <div className="rounded-md bg-sky-50 border border-sky-200 p-3">
                       <p className="text-xs text-sky-700">
@@ -443,7 +483,7 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                 )}
 
                 {/* PPKP Processing Action */}
-                {activeStep.step === 'PPKP_PROCESSING' && app.status === 'PPKP_PROCESSING' && (
+                {activeStep.step === 'PPKP_PROCESSING' && app.status === 'PPKP_PROCESSING' && canPPKPComplete && (
                   <div className="space-y-3">
                     <div className="rounded-md bg-violet-50 border border-violet-200 p-3">
                       <p className="text-xs text-violet-700">
@@ -468,7 +508,7 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                 )}
 
                 {/* PPL Review Action */}
-                {activeStep.step === 'PPL_REVIEW' && app.status === 'PPL_REVIEW' && (
+                {activeStep.step === 'PPL_REVIEW' && app.status === 'PPL_REVIEW' && canPPLReview && (
                   <div className="space-y-3">
                     <div className="rounded-md bg-teal-50 border border-teal-200 p-3">
                       <p className="text-xs text-teal-700">
@@ -493,7 +533,7 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                 )}
 
                 {/* PLB Decision Action */}
-                {activeStep.step === 'PLB_DECISION' && app.status === 'PLB_DECISION' && (
+                {activeStep.step === 'PLB_DECISION' && app.status === 'PLB_DECISION' && canPLBDecide && (
                   <div className="space-y-3">
                     <div className="rounded-md bg-orange-50 border border-orange-200 p-3">
                       <p className="text-xs text-orange-700">
@@ -529,6 +569,23 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                     </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Permission Notice - shown when user views an application but doesn't have action permission */}
+          {app.status !== 'COMPLETED' && app.status !== 'REJECTED' && activeStep && !canSeeActionPanel && (
+            <Card className="border-gray-200 bg-gray-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <ShieldAlert className="h-5 w-5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Tiada kebenaran tindakan</p>
+                    <p className="text-xs mt-0.5">
+                      Langkah semasa ({formatStepName(activeStep.step)}) memerlukan peranan {activeStep.step === 'PT_FILE_OPENING' || activeStep.step === 'PT_FILE_REGISTRATION' ? 'PT' : activeStep.step === 'PPKP_PROCESSING' ? 'PPKP' : activeStep.step === 'PPL_REVIEW' ? 'PPL' : 'PLB'} untuk melakukan tindakan.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
