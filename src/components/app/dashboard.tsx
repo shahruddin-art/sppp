@@ -142,7 +142,7 @@ export default function Dashboard() {
                 const percentage = summary.totalApplications > 0 ? Math.round((count / summary.totalApplications) * 100) : 0;
                 return (
                   <div key={status} className="flex items-center gap-3">
-                    <Badge variant="outline" className={`min-w-[140px] justify-center text-xs ${getStatusColor(status)}`}>
+                    <Badge variant="outline" className={`min-w-[140px] max-w-[180px] truncate justify-center text-xs ${getStatusColor(status)}`}>
                       {formatStatus(status)}
                     </Badge>
                     <div className="flex-1">
@@ -168,7 +168,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {['A', 'B', 'C', 'D', 'E'].map(zone => {
                 const count = zoneCounts[zone] || 0;
                 return (
@@ -227,8 +227,8 @@ export default function Dashboard() {
               { label: 'PT', desc: 'Pembantu Tadbir', sla: '3 hari' },
               { label: 'PT', desc: 'Daftar No. Fail', sla: 'Segera' },
               { label: 'PPKP(L/P)', desc: 'Pemprosesan', sla: '4 hari' },
-              { label: 'PPL(L/P)', desc: 'Penolong Pengarah Pelesenan', sla: '3 hari' },
-              { label: 'PLB', desc: 'Pengarah Pelesenan Bandaraya', sla: '-' },
+              { label: 'PPL(L/P)', desc: 'Penolong Pg. Pelesenan', sla: '3 hari' },
+              { label: 'PLB', desc: 'Pg. Pelesenan Bandaraya', sla: '-' },
             ].map((item, i, arr) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="rounded-lg border bg-card p-3 text-center min-w-[100px]">
@@ -302,7 +302,7 @@ export default function Dashboard() {
             <div className="space-y-2">
               {Object.entries(data.typeCounts).map(([type, count]) => (
                 <div key={type} className="flex items-center justify-between py-1.5 border-b last:border-0">
-                  <span className="text-sm">{formatApplicationType(type)}</span>
+                  <span className="text-sm truncate max-w-[200px]">{formatApplicationType(type)}</span>
                   <Badge variant="secondary" className="font-mono">{count}</Badge>
                 </div>
               ))}

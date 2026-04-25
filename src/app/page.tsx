@@ -154,7 +154,7 @@ export default function HomePage() {
                   <h1 className="text-lg font-bold text-gray-900 leading-tight">
                     Butiran Permohonan
                   </h1>
-                  <p className="text-[10px] text-muted-foreground leading-tight">
+                  <p className="text-[10px] text-muted-foreground leading-tight truncate max-w-[200px]">
                     {user.name} — {ROLE_LABELS[user.role] || user.role}
                   </p>
                 </div>
@@ -285,8 +285,8 @@ export default function HomePage() {
           </div>
 
           {/* Role indicator bar */}
-          <div className="mt-2 flex items-center gap-2">
-            <Badge variant="outline" className={`text-[10px] ${ROLE_COLORS[user.role] || ''}`}>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className={`text-[10px] max-w-[220px] truncate ${ROLE_COLORS[user.role] || ''}`}>
               {ROLE_ICONS[user.role] || '👤'} {ROLE_LABELS[user.role] || user.role}
             </Badge>
             {user.zone && (
@@ -310,8 +310,8 @@ export default function HomePage() {
             <p className="text-xs text-muted-foreground">
               Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()}
             </p>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>SLA: PT (3 hari) | PPKP (4 hari) | PPL (3 hari)</span>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+              <span>SLA: PT (3 hari)</span><span>•</span><span>PPKP (4 hari)</span><span>•</span><span>PPL (3 hari)</span>
             </div>
           </div>
         </div>

@@ -198,11 +198,11 @@ export default function ApplicationForm() {
                     {ppkpRoute === 'PPKP_L' ? 'PPKP(L) - Lesen' : 'PPKP(P) - Pasar'}
                   </Badge>
                   <span className="text-xs text-muted-foreground">→</span>
-                  <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
+                  <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 max-w-[180px] truncate">
                     {pplRoute === 'PPL_L' ? 'PPL(L) - Penolong Pengarah' : 'PPL(P) - Penolong Pengarah'}
                   </Badge>
                   <span className="text-xs text-muted-foreground">→</span>
-                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 max-w-[180px] truncate">
                     PLB - Pengarah Pelesenan Bandaraya
                   </Badge>
                 </div>

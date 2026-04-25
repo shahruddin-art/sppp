@@ -206,11 +206,11 @@ export default function ApplicationList({ onSelect }: ApplicationListProps) {
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-sm">{app.applicantName}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate">{app.applicantName}</p>
                       <p className="text-xs text-muted-foreground">{app.referenceNo}</p>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] ${getStatusColor(app.status)}`}>
+                    <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${getStatusColor(app.status)}`}>
                       {formatStatus(app.status)}
                     </Badge>
                   </div>
@@ -219,11 +219,11 @@ export default function ApplicationList({ onSelect }: ApplicationListProps) {
                     <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
                       Zon {app.zone}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
                       {app.applicationTypeLabel}
                     </Badge>
                     {app.fileNumber && (
-                      <Badge variant="outline" className="text-[10px] bg-gray-50">
+                      <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
                         {app.fileNumber}
                       </Badge>
                     )}

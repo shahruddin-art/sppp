@@ -149,14 +149,14 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1">
-          <h2 className="font-semibold text-lg">{app.applicantName}</h2>
-          <p className="text-sm text-muted-foreground">{app.referenceNo}</p>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-semibold text-lg truncate">{app.applicantName}</h2>
+          <p className="text-sm text-muted-foreground font-mono">{app.referenceNo}</p>
         </div>
-        <Badge variant="outline" className={getStatusColor(app.status)}>
+        <Badge variant="outline" className={`shrink-0 ${getStatusColor(app.status)}`}>
           {formatStatus(app.status)}
         </Badge>
       </div>
@@ -173,13 +173,13 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Nama</span>
-                <span className="font-medium">{app.applicantName}</span>
+              <div className="flex justify-between min-w-0 gap-2">
+                <span className="text-muted-foreground shrink-0">Nama</span>
+                <span className="font-medium truncate">{app.applicantName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">No. IC/ROC</span>
-                <span className="font-mono">{app.applicantIc}</span>
+              <div className="flex justify-between min-w-0 gap-2">
+                <span className="text-muted-foreground shrink-0">No. IC/ROC</span>
+                <span className="font-mono truncate">{app.applicantIc}</span>
               </div>
               {app.applicantPhone && (
                 <div className="flex justify-between">
@@ -194,9 +194,9 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                 </div>
               )}
               <Separator />
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Jenis</span>
-                <Badge variant="outline" className="text-[10px]">{app.applicationTypeLabel}</Badge>
+              <div className="flex justify-between items-center min-w-0 gap-2">
+                <span className="text-muted-foreground shrink-0">Jenis</span>
+                <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">{app.applicationTypeLabel}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Zon</span>
@@ -246,9 +246,9 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                 </div>
               )}
               {app.plbStaff && (
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">PLB - Pengarah Pelesenan Bandaraya</span>
-                  <p className="font-medium">{app.plbStaff.name}</p>
+                <div className="flex justify-between items-center min-w-0 gap-2">
+                  <span className="text-muted-foreground shrink-0 text-xs sm:text-sm">PLB - Pengarah Pelesenan Bandaraya</span>
+                  <p className="font-medium truncate">{app.plbStaff.name}</p>
                 </div>
               )}
             </CardContent>
@@ -368,7 +368,7 @@ export default function ApplicationDetail({ applicationId, onBack }: Application
                             </p>
                           )}
                           {step.comments && (
-                            <p className="italic">{step.comments}</p>
+                            <p className="italic line-clamp-3">{step.comments}</p>
                           )}
                         </div>
                       </div>

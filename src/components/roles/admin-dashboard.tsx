@@ -392,10 +392,10 @@ function PenggunaTab() {
                 <TableBody>
                   {filteredUsers.map((u) => (
                     <TableRow key={u.id} className={!u.isActive ? 'opacity-50' : undefined}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{u.username}</TableCell>
+                      <TableCell className="font-medium max-w-[150px] truncate">{u.name}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-[120px] truncate">{u.username}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs max-w-[180px] truncate">
                           {formatStaffRole(u.role)}
                         </Badge>
                       </TableCell>
@@ -408,7 +408,7 @@ function PenggunaTab() {
                           <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{u.email || '-'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[160px] truncate">{u.email || '-'}</TableCell>
                       <TableCell>
                         {u.isActive ? (
                           <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-xs border-0">

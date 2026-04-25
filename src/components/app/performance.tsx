@@ -126,7 +126,7 @@ export default function Performance() {
           <CardDescription>Perbandingan prestasi permohonan bagi setiap zon</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {Object.entries(zonePerformance).map(([zone, perf]) => {
               const completionRate = perf.total > 0 ? Math.round((perf.completed / perf.total) * 100) : 0;
               const zoneColors: Record<string, string> = {

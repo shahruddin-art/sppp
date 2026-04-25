@@ -282,11 +282,11 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                     {ppkpRoute === 'PPKP_L' ? 'PPKP(L) - Lesen' : 'PPKP(P) - Pasar'}
                   </Badge>
                   <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
+                  <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 max-w-[180px] truncate">
                     {pplRoute === 'PPL_L' ? 'PPL(L) - Penolong Pengarah' : 'PPL(P) - Penolong Pengarah'}
                   </Badge>
                   <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 max-w-[180px] truncate">
                     PLB - Pengarah Pelesenan Bandaraya
                   </Badge>
                 </div>
@@ -504,11 +504,11 @@ function SenaraiPermohonan({
                     <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
                       Zon {app.zone}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
                       {app.applicationTypeLabel}
                     </Badge>
                     {app.fileNumber && (
-                      <Badge variant="outline" className="text-[10px] bg-gray-50">
+                      <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
                         {app.fileNumber}
                       </Badge>
                     )}

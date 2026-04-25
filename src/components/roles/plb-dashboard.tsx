@@ -225,9 +225,9 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
-                <User className="h-3 w-3 mr-1" />
-                {user.name}
+              <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200 max-w-[150px] truncate">
+                <User className="h-3 w-3 mr-1 shrink-0" />
+                <span className="truncate">{user.name}</span>
               </Badge>
               <Button variant="outline" size="icon" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4" />
@@ -320,11 +320,11 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
                         className="flex items-start justify-between cursor-pointer"
                         onClick={() => onSelectApp(app.id)}
                       >
-                        <div>
-                          <p className="font-semibold text-sm">{app.applicantName}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm truncate">{app.applicantName}</p>
                           <p className="text-xs text-muted-foreground">{app.referenceNo}</p>
                         </div>
-                        <Badge variant="outline" className={`text-[10px] ${getStatusColor(app.status)}`}>
+                        <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${getStatusColor(app.status)}`}>
                           {formatStatus(app.status)}
                         </Badge>
                       </div>
@@ -337,11 +337,11 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
                         <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
                           Zon {app.zone}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
                           {app.applicationTypeLabel}
                         </Badge>
                         {app.fileNumber && (
-                          <Badge variant="outline" className="text-[10px] bg-gray-50">
+                          <Badge variant="outline" className="text-[10px] bg-gray-50 max-w-[120px] truncate">
                             {app.fileNumber}
                           </Badge>
                         )}
@@ -510,9 +510,9 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="outline" className={`text-[10px] ${getDecisionBadgeColor(app.plbDecision)}`}>
+                        <Badge variant="outline" className={`text-[10px] max-w-[160px] truncate ${getDecisionBadgeColor(app.plbDecision)}`}>
                           {getDecisionIcon(app.plbDecision)}
-                          <span className="ml-1">{formatPlbDecision(app.plbDecision || '')}</span>
+                          <span className="ml-1 truncate">{formatPlbDecision(app.plbDecision || '')}</span>
                         </Badge>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                           {formatDateTime(app.updatedAt)}

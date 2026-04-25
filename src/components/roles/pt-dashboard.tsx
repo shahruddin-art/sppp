@@ -365,7 +365,7 @@ export default function PTDashboard({ user, onSelectApp }: PTDashboardProps) {
                         <div className="flex items-center gap-1.5">
                           <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
                           <span className="text-muted-foreground">Jenis:</span>
-                          <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 max-w-[120px] truncate">
                             {app.applicationTypeLabel}
                           </Badge>
                         </div>
@@ -506,7 +506,7 @@ export default function PTDashboard({ user, onSelectApp }: PTDashboardProps) {
                         <div className="flex items-center gap-1.5">
                           <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
                           <span className="text-muted-foreground">Jenis:</span>
-                          <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 max-w-[120px] truncate">
                             {app.applicationTypeLabel}
                           </Badge>
                         </div>
@@ -533,7 +533,7 @@ export default function PTDashboard({ user, onSelectApp }: PTDashboardProps) {
                         <div className="flex items-center gap-1.5 text-xs">
                           <Hash className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">Status pendaftaran:</span>
-                          <Badge variant="outline" className="text-[10px] h-4 bg-sky-50 text-sky-700 border-sky-200">
+                          <Badge variant="outline" className="text-[10px] h-4 bg-sky-50 text-sky-700 border-sky-200 max-w-[180px] truncate">
                             Menunggu pendaftaran nombor fail
                           </Badge>
                         </div>
