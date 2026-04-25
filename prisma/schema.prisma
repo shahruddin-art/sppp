@@ -7,18 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Staff {
+model User {
   id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
   name      String
-  role      String   // KAUNTER, PT, PPKP_L, PPKP_P, PPL_L, PPL_P, PLB
-  zone      String?  // A, B, C, D, E (null for KAUNTER, PLB)
+  role      String   // ADMIN, KAUNTER, PT, PPKP_L, PPKP_P, PPL_L, PPL_P, PLB
+  zone      String?  // A, B, C, D, E (null for ADMIN, KAUNTER, PLB)
   email     String?
   phone     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedSteps   WorkflowStep[]  @relation("StepAssignedStaff")
+  assignedSteps   WorkflowStep[]  @relation("StepAssignedUser")
   ptApplications  Application[] @relation("PTAssigned")
   ppkpApplications Application[] @relation("PPKPAssigned")
   pplApplications Application[] @relation("PPLAssigned")
@@ -46,10 +48,10 @@ model Application {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  ptStaff    Staff?         @relation("PTAssigned", fields: [ptStaffId], references: [id])
-  ppkpStaff  Staff?         @relation("PPKPAssigned", fields: [ppkpStaffId], references: [id])
-  pplStaff   Staff?         @relation("PPLAssigned", fields: [pplStaffId], references: [id])
-  plbStaff   Staff?         @relation("PLBAssigned", fields: [plbStaffId], references: [id])
+  ptStaff    User?         @relation("PTAssigned", fields: [ptStaffId], references: [id])
+  ppkpStaff  User?         @relation("PPKPAssigned", fields: [ppkpStaffId], references: [id])
+  pplStaff   User?         @relation("PPLAssigned", fields: [pplStaffId], references: [id])
+  plbStaff   User?         @relation("PLBAssigned", fields: [plbStaffId], references: [id])
   steps      WorkflowStep[]
 }
 
@@ -68,5 +70,15 @@ model WorkflowStep {
   updatedAt     DateTime @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  assignedTo  Staff?      @relation("StepAssignedStaff", fields: [assignedToId], references: [id])
+  assignedTo  User?       @relation("StepAssignedUser", fields: [assignedToId], references: [id])
+}
+
+model KpiConfig {
+  id          String   @id @default(cuid())
+  stepName    String   @unique // PT_FILE_OPENING, PPKP_PROCESSING, PPL_REVIEW
+  slaDays     Float    // SLA in days
+  warningDays Float    // Days before deadline to show warning
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

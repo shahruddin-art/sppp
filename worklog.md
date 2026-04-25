@@ -1,26 +1,32 @@
 ---
-Task ID: 1
+Task ID: 1-11
 Agent: Main Agent
-Task: Build comprehensive Process Performance Management System (Sistem Pengurusan Prestasi Proses Permohonan)
+Task: Implement complete RBAC system for Sistem Pengurusan Prestasi Proses Permohonan
 
 Work Log:
-- Analyzed user requirements for application process performance management system
-- Designed database schema with Staff, Application, and WorkflowStep models
-- Created Prisma schema and pushed to SQLite database
-- Built 6 API routes: /api/seed, /api/dashboard, /api/applications, /api/applications/[id], /api/applications/[id]/action, /api/staff, /api/performance
-- Created constants and formatters utility libraries
-- Built 5 frontend components: Dashboard, ApplicationList, ApplicationForm, ApplicationDetail, Performance
-- Created main page with tab navigation combining all components
-- Seeded database with 15 staff members and 12 sample applications across various statuses
-- Ran lint check - all passed with no errors
-- Verified all API endpoints working correctly
+- Fixed PO→PLB rename (already complete from previous session)
+- Updated Prisma schema: replaced Staff model with User model (with username/password auth), added KpiConfig model
+- Pushed schema to database with prisma db push
+- Created auth library (src/lib/auth.ts) with SHA-256 password hashing and HMAC-signed JWT session tokens
+- Created auth API routes: /api/auth/login, /api/auth/session, /api/auth/logout
+- Created admin API routes: /api/admin/users, /api/admin/users/[id], /api/admin/kpi
+- Updated seed data with 16 users (all roles with demo passwords) and 12 sample applications
+- Created auth store (src/lib/auth-store.ts) using Zustand for client-side auth state
+- Created login component (src/components/auth/login-form.tsx) with demo credentials display
+- Created Admin Dashboard (src/components/roles/admin-dashboard.tsx) with 4 tabs: Pengguna, Konfigurasi, KPI, Laporan
+- Created Kaunter Dashboard (src/components/roles/kaunter-dashboard.tsx) with registration form and application list
+- Created PT Dashboard (src/components/roles/pt-dashboard.tsx) with file opening and registration actions
+- Created PPKP Dashboard (src/components/roles/ppkp-dashboard.tsx) with processing completion action
+- Created PPL Dashboard (src/components/roles/ppl-dashboard.tsx) with ulasan review action
+- Created PLB Dashboard (src/components/roles/plb-dashboard.tsx) with decision making action
+- Updated main page.tsx with role-based routing, login flow, and user menu dropdown
+- Updated all existing API routes to use User model instead of Staff model
+- Verified: lint passes, all APIs work, page loads, login works for all roles
 
 Stage Summary:
-- Complete system built with database, backend APIs, and frontend UI
-- System supports full workflow: Kaunter → PT → PPKP(L/P) → PPL(L/P) → PO
-- SLA tracking for PT (3 days), PPKP (4 days), PPL (3 days)
-- Zone-based routing (A, B, C, D, E) with automatic staff assignment
-- Application type routing to PPKP(L) or PPKP(P) based on type
-- Real-time countdown timers and overdue detection
-- Performance analytics by zone, step type, and application type
-- All data seeded and APIs verified working
+- Complete RBAC system with 6 roles: ADMIN, KAUNTER, PT, PPKP_L/P, PPL_L/P, PLB
+- Each role has its own dashboard with role-appropriate actions
+- JWT-based session auth with httpOnly cookies
+- Admin can manage users, configure KPI/SLA parameters, and view performance reports
+- All text in Bahasa Malaysia
+- Demo credentials provided on login page

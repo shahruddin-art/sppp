@@ -1,51 +1,62 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateReferenceNo, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { hashPassword } from '@/lib/auth';
 
-// Seed database with sample staff and applications
-export async function POST(request: Request) {
+// Seed database with sample users and applications
+export async function POST() {
   try {
     // Clear existing data
     await db.workflowStep.deleteMany();
     await db.application.deleteMany();
-    await db.staff.deleteMany();
+    await db.kpiConfig.deleteMany();
+    await db.user.deleteMany();
 
-    // Create staff members
-    const staffData = [
-      // Kaunter staff
-      { name: 'Siti Aminah', role: 'KAUNTER', zone: null, email: 'siti@mpsp.gov.my', phone: '04-5551001' },
-      { name: 'Ahmad Razali', role: 'KAUNTER', zone: null, email: 'ahmad@mpsp.gov.my', phone: '04-5551002' },
-
-      // PT staff by zone
-      { name: 'Lim Wei Hong', role: 'PT', zone: 'A', email: 'lim.wh@mpsp.gov.my', phone: '04-5552001' },
-      { name: 'Nasir Hassan', role: 'PT', zone: 'B', email: 'nasir@mpsp.gov.my', phone: '04-5552002' },
-      { name: 'Rajesh Kumar', role: 'PT', zone: 'C', email: 'rajesh@mpsp.gov.my', phone: '04-5552003' },
-      { name: 'Tan Mei Ling', role: 'PT', zone: 'D', email: 'tan.ml@mpsp.gov.my', phone: '04-5552004' },
-      { name: 'Omar Bakar', role: 'PT', zone: 'E', email: 'omar@mpsp.gov.my', phone: '04-5552005' },
-
-      // PPKP(L) staff
-      { name: 'Cheah Soo Beng', role: 'PPKP_L', zone: null, email: 'cheah@mpsp.gov.my', phone: '04-5553001' },
-      { name: 'Wong Hock Seng', role: 'PPKP_L', zone: null, email: 'wong@mpsp.gov.my', phone: '04-5553002' },
-
-      // PPKP(P) staff
-      { name: 'Noraini Mohd', role: 'PPKP_P', zone: null, email: 'noraini@mpsp.gov.my', phone: '04-5554001' },
-      { name: 'Zabidi Ali', role: 'PPKP_P', zone: null, email: 'zabidi@mpsp.gov.my', phone: '04-5554002' },
-
-      // PPL(L) staff
-      { name: 'Tee Kim Seng', role: 'PPL_L', zone: null, email: 'tee@mpsp.gov.my', phone: '04-5555001' },
-
-      // PPL(P) staff
-      { name: 'Rosnah Ahmad', role: 'PPL_P', zone: null, email: 'rosnah@mpsp.gov.my', phone: '04-5555002' },
-
-      // PLB staff
-      { name: 'Dato\' Ismail', role: 'PLB', zone: null, email: 'ismail@mpsp.gov.my', phone: '04-5556001' },
-      { name: 'Encik Farid', role: 'PLB', zone: null, email: 'farid@mpsp.gov.my', phone: '04-5556002' },
+    // Create users with credentials (password same as username for demo)
+    const usersData = [
+      { username: 'admin', password: 'admin123', name: 'Pentadbir Sistem', role: 'ADMIN', zone: null, email: 'admin@mpsp.gov.my', phone: '04-5550000' },
+      { username: 'siti', password: 'siti123', name: 'Siti Aminah', role: 'KAUNTER', zone: null, email: 'siti@mpsp.gov.my', phone: '04-5551001' },
+      { username: 'ahmad', password: 'ahmad123', name: 'Ahmad Razali', role: 'KAUNTER', zone: null, email: 'ahmad@mpsp.gov.my', phone: '04-5551002' },
+      { username: 'lim', password: 'lim123', name: 'Lim Wei Hong', role: 'PT', zone: 'A', email: 'lim.wh@mpsp.gov.my', phone: '04-5552001' },
+      { username: 'nasir', password: 'nasir123', name: 'Nasir Hassan', role: 'PT', zone: 'B', email: 'nasir@mpsp.gov.my', phone: '04-5552002' },
+      { username: 'rajesh', password: 'rajesh123', name: 'Rajesh Kumar', role: 'PT', zone: 'C', email: 'rajesh@mpsp.gov.my', phone: '04-5552003' },
+      { username: 'tanml', password: 'tanml123', name: 'Tan Mei Ling', role: 'PT', zone: 'D', email: 'tan.ml@mpsp.gov.my', phone: '04-5552004' },
+      { username: 'omar', password: 'omar123', name: 'Omar Bakar', role: 'PT', zone: 'E', email: 'omar@mpsp.gov.my', phone: '04-5552005' },
+      { username: 'cheah', password: 'cheah123', name: 'Cheah Soo Beng', role: 'PPKP_L', zone: null, email: 'cheah@mpsp.gov.my', phone: '04-5553001' },
+      { username: 'wong', password: 'wong123', name: 'Wong Hock Seng', role: 'PPKP_L', zone: null, email: 'wong@mpsp.gov.my', phone: '04-5553002' },
+      { username: 'noraini', password: 'noraini123', name: 'Noraini Mohd', role: 'PPKP_P', zone: null, email: 'noraini@mpsp.gov.my', phone: '04-5554001' },
+      { username: 'zabidi', password: 'zabidi123', name: 'Zabidi Ali', role: 'PPKP_P', zone: null, email: 'zabidi@mpsp.gov.my', phone: '04-5554002' },
+      { username: 'tee', password: 'tee123', name: 'Tee Kim Seng', role: 'PPL_L', zone: null, email: 'tee@mpsp.gov.my', phone: '04-5555001' },
+      { username: 'rosnah', password: 'rosnah123', name: 'Rosnah Ahmad', role: 'PPL_P', zone: null, email: 'rosnah@mpsp.gov.my', phone: '04-5555002' },
+      { username: 'ismail', password: 'ismail123', name: "Dato' Ismail", role: 'PLB', zone: null, email: 'ismail@mpsp.gov.my', phone: '04-5556001' },
+      { username: 'farid', password: 'farid123', name: 'Encik Farid', role: 'PLB', zone: null, email: 'farid@mpsp.gov.my', phone: '04-5556002' },
     ];
 
-    const staff = [];
-    for (const s of staffData) {
-      const created = await db.staff.create({ data: s });
-      staff.push(created);
+    const users = [];
+    for (const u of usersData) {
+      const created = await db.user.create({
+        data: {
+          username: u.username,
+          password: hashPassword(u.password),
+          name: u.name,
+          role: u.role,
+          zone: u.zone,
+          email: u.email,
+          phone: u.phone,
+        },
+      });
+      users.push(created);
+    }
+
+    // Create KPI configs
+    const kpiConfigs = [
+      { stepName: 'PT_FILE_OPENING', slaDays: 3, warningDays: 1 },
+      { stepName: 'PPKP_PROCESSING', slaDays: 4, warningDays: 1 },
+      { stepName: 'PPL_REVIEW', slaDays: 3, warningDays: 1 },
+    ];
+
+    for (const kpi of kpiConfigs) {
+      await db.kpiConfig.create({ data: kpi });
     }
 
     // Create sample applications with various statuses
@@ -204,13 +215,13 @@ export async function POST(request: Request) {
       const refNo = generateReferenceNo();
       const createdAt = new Date(now.getTime() - (i + 1) * 2 * 24 * 60 * 60 * 1000); // stagger creation dates
 
-      // Find appropriate staff
-      const ptStaff = staff.find(s => s.role === 'PT' && s.zone === app.zone);
+      // Find appropriate staff using User model
+      const ptStaff = users.find(s => s.role === 'PT' && s.zone === app.zone);
       const ppkpRole = getPPKPRole(app.applicationType);
-      const ppkpStaff = staff.find(s => s.role === ppkpRole);
+      const ppkpStaff = users.find(s => s.role === ppkpRole);
       const pplRole = getPPLRole(ppkpRole);
-      const pplStaff = staff.find(s => s.role === pplRole);
-      const plbStaff = staff.find(s => s.role === 'PLB');
+      const pplStaff = users.find(s => s.role === pplRole);
+      const plbStaff = users.find(s => s.role === 'PLB');
 
       const application = await db.application.create({
         data: {
@@ -236,7 +247,7 @@ export async function POST(request: Request) {
       });
 
       // Create workflow steps for each application based on current status
-      const stepsToCreate = getStepsForStatus(app.status, createdAt, now, app.zone, staff, ptStaff, ppkpStaff, pplStaff, plbStaff);
+      const stepsToCreate = getStepsForStatus(app.status, createdAt, now, app.zone, users, ptStaff, ppkpStaff, pplStaff, plbStaff);
 
       for (const step of stepsToCreate) {
         await db.workflowStep.create({
@@ -255,7 +266,13 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, message: 'Database seeded successfully', staffCount: staff.length, applicationCount: applications.length });
+    return NextResponse.json({
+      success: true,
+      message: 'Database seeded successfully',
+      userCount: users.length,
+      kpiConfigCount: kpiConfigs.length,
+      applicationCount: applications.length,
+    });
   } catch (error) {
     console.error('Seed error:', error);
     return NextResponse.json({ error: 'Failed to seed database' }, { status: 500 });
@@ -267,14 +284,14 @@ function getStepsForStatus(
   createdAt: Date,
   now: Date,
   zone: string,
-  staff: any[],
+  users: any[],
   ptStaff: any,
   ppkpStaff: any,
   pplStaff: any,
   plbStaff: any
 ) {
   const steps: any[] = [];
-  const kaunterStaff = staff.find(s => s.role === 'KAUNTER');
+  const kaunterStaff = users.find(s => s.role === 'KAUNTER');
 
   // Step 1: Kaunter receipt - always completed
   steps.push({

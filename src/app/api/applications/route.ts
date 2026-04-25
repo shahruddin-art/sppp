@@ -80,13 +80,13 @@ export async function POST(request: Request) {
     const referenceNo = generateReferenceNo();
 
     // Find PT staff for this zone
-    const ptStaff = await db.staff.findFirst({ where: { role: 'PT', zone, isActive: true } });
+    const ptStaff = await db.user.findFirst({ where: { role: 'PT', zone, isActive: true } });
     const ppkpRole = getPPKPRole(applicationType);
-    const ppkpStaff = await db.staff.findFirst({ where: { role: ppkpRole, isActive: true } });
+    const ppkpStaff = await db.user.findFirst({ where: { role: ppkpRole, isActive: true } });
     const pplRole = getPPLRole(ppkpRole);
-    const pplStaff = await db.staff.findFirst({ where: { role: pplRole, isActive: true } });
-    const plbStaff = await db.staff.findFirst({ where: { role: 'PLB', isActive: true } });
-    const kaunterStaff = await db.staff.findFirst({ where: { role: 'KAUNTER', isActive: true } });
+    const pplStaff = await db.user.findFirst({ where: { role: pplRole, isActive: true } });
+    const plbStaff = await db.user.findFirst({ where: { role: 'PLB', isActive: true } });
+    const kaunterStaff = await db.user.findFirst({ where: { role: 'KAUNTER', isActive: true } });
 
     const now = new Date();
     const ptSlaDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
