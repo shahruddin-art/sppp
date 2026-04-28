@@ -15,8 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   FileText,
   LogOut,
-  User,
-  Shield,
   Loader2,
   Database,
   ChevronDown,
@@ -67,23 +65,18 @@ const ROLE_ICONS: Record<string, string> = {
 export default function HomePage() {
   const { user, initialized, initialize, logout } = useAuthStore();
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
-  const [seeded, setSeeded] = useState(false);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
   const handleSeed = async () => {
-    setSeeding(true);
+    if (!confirm('Ini akan memadam semua data sedia ada dan menggantikan dengan data contoh. Teruskan?')) return;
     try {
-      await postData('/api/seed', {});
-      setSeeded(true);
+      await postData('/api/seed?force=true', {});
       toast.success('Data contoh berjaya dimuatkan! Sila log masuk semula.');
     } catch (error: any) {
-      toast.error('Gagal memuatkan data contoh');
-    } finally {
-      setSeeding(false);
+      toast.error(error.message || 'Gagal memuatkan data contoh');
     }
   };
 
@@ -114,29 +107,7 @@ export default function HomePage() {
 
   // Not logged in - show login form
   if (!user) {
-    return (
-      <div className="relative">
-        {!seeded && (
-          <div className="absolute top-4 right-4 z-50">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSeed}
-              disabled={seeding}
-              className="gap-2 bg-white shadow-sm"
-            >
-              {seeding ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Database className="h-3.5 w-3.5" />
-              )}
-              Muat Data Contoh
-            </Button>
-          </div>
-        )}
-        <LoginForm />
-      </div>
-    );
+    return <LoginForm />;
   }
 
   // Application detail view (overlay for any role)
@@ -227,19 +198,14 @@ export default function HomePage() {
 
             <div className="flex items-center gap-3">
               {/* Seed button for admin */}
-              {user.role === 'ADMIN' && !seeded && (
+              {user.role === 'ADMIN' && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSeed}
-                  disabled={seeding}
                   className="gap-2"
                 >
-                  {seeding ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Database className="h-3.5 w-3.5" />
-                  )}
+                  <Database className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Data Contoh</span>
                 </Button>
               )}

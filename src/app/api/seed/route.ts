@@ -5,6 +5,7 @@ import { hashPassword } from '@/lib/auth';
 import { requireAuth, canSeed } from '@/lib/rbac';
 
 // Seed database with sample users and applications
+// Only works if database is empty. Requires ADMIN role.
 export async function POST(request: Request) {
   try {
     // ── Auth check: Only ADMIN can seed ──
@@ -14,11 +15,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Hanya Pentadbir boleh memuatkan data contoh.' }, { status: 403 });
     }
 
-    // Clear existing data
-    await db.workflowStep.deleteMany();
-    await db.application.deleteMany();
-    await db.kpiConfig.deleteMany();
-    await db.user.deleteMany();
+    // ── Check if data already exists ──
+    const existingUserCount = await db.user.count();
+    if (existingUserCount > 0) {
+      // Check for force query param to allow overwrite
+      const url = new URL(request.url);
+      const force = url.searchParams.get('force') === 'true';
+      if (!force) {
+        return NextResponse.json({ 
+          error: 'Database sudah mengandungi data. Gunakan ?force=true untuk memadam dan menggantikan data sedia ada.',
+          existingUsers: existingUserCount,
+        }, { status: 409 });
+      }
+      // Force mode: clear existing data
+      await db.workflowStep.deleteMany();
+      await db.application.deleteMany();
+      await db.kpiConfig.deleteMany();
+      await db.user.deleteMany();
+    }
 
     // Create users with credentials (password same as username for demo)
     const usersData = [
