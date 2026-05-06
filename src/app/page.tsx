@@ -142,7 +142,7 @@ export default function HomePage() {
         <footer className="mt-auto border-t bg-white py-3">
           <div className="max-w-7xl mx-auto px-4">
             <p className="text-xs text-muted-foreground text-center">
-              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()}
+              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()} | Versi 5/5/2026 08:00am
             </p>
           </div>
         </footer>
@@ -274,7 +274,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()}
+              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()} | Versi 5/5/2026 08:00am
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
               <span>SLA: PT (3 hari)</span><span>•</span><span>PPKP (4 hari)</span><span>•</span><span>PPL (3 hari)</span>
