@@ -23,3 +23,28 @@ Stage Summary:
 - Login API returns valid JWT tokens
 - Server accessible via localhost:3000 with HTTP 200
 - Key fix: double-fork daemonization prevents sandbox from killing the server process
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix "UNABLE TO PUBLISH APP" - dev server was not running
+
+Work Log:
+- User reported "UNABLE TO PUBLISH APP" - the dev server had crashed again
+- Verified server was not responding (curl returned 000)
+- No running node/next processes found
+- Killed any stale processes and cleaned .next cache
+- Restarted dev server using .zscripts/dev.sh daemonization script
+- Waited for server to become ready on localhost:3000
+- Health check passed: HTTP 200
+- Verified login API works: admin/admin123 returns valid JWT token
+- Verified page renders: "Sistem Pengurusan Prestasi Proses Permohonan" + "Memuatkan sistem..."
+- Verified all code is intact: businessType field exists in kaunter-dashboard.tsx (lines 106, 124-131, 289-316)
+- Verified BUSINESS_TYPES constant is properly defined in constants.ts
+- Verified API route handles businessType correctly (route.ts lines 101, 109-111, 138)
+- Verified application-detail.tsx displays businessType (lines 76, 231-236)
+
+Stage Summary:
+- Dev server restarted and running as daemon on port 3000
+- All features intact: businessType field in Kaunter form, API handling, detail view
+- App is accessible at localhost:3000 with HTTP 200
