@@ -75,3 +75,31 @@ Stage Summary:
 - Admin now has full CRUD for applications with table view and pagination
 - API endpoints secured: PUT/DELETE restricted to ADMIN role
 - Tab "Permohonan" is the default first tab for Admin users
+
+---
+Task ID: 4
+Agent: Main
+Task: Add document checklist during file opening process with print functionality
+
+Work Log:
+- Read uploaded PDF (2174_001.pdf) - it was image-based (scanned), so used VLM to extract content
+- Identified checklist format from PDF: 10 items with circled numbers, file number header, reference section, company info, signature block
+- Added DOCUMENT_CHECKLIST constant to constants.ts with checklist items per application type (PERMOHONAN_BARU: 10 items, TUKAR_NAMA_SYARIKAT: 7 items, TAMBAH_KURANG_PREMIS: 10 items, TAMBAH_TUKAR_AKTIVITI: 8 items, PINDAH_MILIK_LESEN: 8 items)
+- Created DocumentChecklist component (src/components/app/document-checklist.tsx) with:
+  - Circled numbers (①②③...⑮) instead of checkbox squares
+  - Application info summary (Bil., aktiviti, Nama Syarikat, alamat)
+  - "Cetak Checklist" button that opens a print-formatted window
+  - Print format: A4 page, file number at top center (18pt bold Arial), all other text Arial 12pt, circled numbers, no checkboxes, fits on one page
+  - Signature block with PT staff name, "Pembantu Tadbir", "Jabatan Pelesenan", "Majlis Bandaraya Ipoh", date
+- Integrated DocumentChecklist into application-detail.tsx:
+  - Added as a standalone card in left column, always visible for PT and ADMIN roles
+  - Removed duplicate toggle approach from action panel to avoid showing checklist twice
+- Cleaned up unused imports (FileCheck, Printer, DOCUMENT_CHECKLIST from application-detail.tsx; useRef, formatDate from document-checklist.tsx)
+- Lint passes clean, dev server running without errors, app returns HTTP 200
+
+Stage Summary:
+- Document checklist is available in the application detail view for PT and ADMIN users
+- Checklist items vary by application type based on official PDF format
+- Print button generates a one-page A4 document matching the official checklist format
+- File number printed at top center in 18pt bold Arial
+- All other text in Arial 12pt with circled numbers (no checkbox squares)

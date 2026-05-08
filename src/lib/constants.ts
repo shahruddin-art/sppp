@@ -73,6 +73,63 @@ export const PLB_DECISIONS = {
   DITOLAK: { label: 'Ditolak' },
 } as const;
 
+// Document checklist items per application type (based on official checklist form)
+export const DOCUMENT_CHECKLIST: Record<string, string[]> = {
+  PERMOHONAN_BARU: [
+    'Salinan Kad Pengenalan',
+    'Salinan Permohonan Lesen Premis Perniagaan (Mynorisk)',
+    'Salinan Pelan Lokasi',
+    'Salinan Pelan Lantai',
+    'Salinan Perakuan Pendaftaran (SSM) / Memorandum & Articles of Association / Private Company Limited By Shares',
+    'Salinan Perjanjian Sewa / Geran (Pajakan Negeri) / Salinan Perjanjian Jual Beli / Surat Akuan Pemilik / Surat Tawaran (Pemilik)',
+    'Salinan Bil Cukai Taksiran',
+    'Gambar Premis (Luar & Dalam)',
+    'Salinan Lesen Premis Perniagaan Serta Merta',
+    'Syarat-Syarat Pelesenan',
+  ],
+  TUKAR_NAMA_SYARIKAT: [
+    'Salinan Kad Pengenalan',
+    'Salinan Permohonan Lesen Premis Perniagaan (Mynorisk)',
+    'Salinan Perakuan Pendaftaran (SSM) / Memorandum & Articles of Association / Private Company Limited By Shares',
+    'Salinan Perjanjian Sewa / Geran (Pajakan Negeri) / Salinan Perjanjian Jual Beli / Surat Akuan Pemilik / Surat Tawaran (Pemilik)',
+    'Salinan Bil Cukai Taksiran',
+    'Salinan Lesen Premis Perniagaan Serta Merta',
+    'Syarat-Syarat Pelesenan',
+  ],
+  TAMBAH_KURANG_PREMIS: [
+    'Salinan Kad Pengenalan',
+    'Salinan Permohonan Lesen Premis Perniagaan (Mynorisk)',
+    'Salinan Pelan Lokasi',
+    'Salinan Pelan Lantai',
+    'Salinan Perakuan Pendaftaran (SSM) / Memorandum & Articles of Association / Private Company Limited By Shares',
+    'Salinan Perjanjian Sewa / Geran (Pajakan Negeri) / Salinan Perjanjian Jual Beli / Surat Akuan Pemilik / Surat Tawaran (Pemilik)',
+    'Salinan Bil Cukai Taksiran',
+    'Gambar Premis (Luar & Dalam)',
+    'Salinan Lesen Premis Perniagaan Serta Merta',
+    'Syarat-Syarat Pelesenan',
+  ],
+  TAMBAH_TUKAR_AKTIVITI: [
+    'Salinan Kad Pengenalan',
+    'Salinan Permohonan Lesen Premis Perniagaan (Mynorisk)',
+    'Salinan Pelan Lokasi',
+    'Salinan Perakuan Pendaftaran (SSM) / Memorandum & Articles of Association / Private Company Limited By Shares',
+    'Salinan Perjanjian Sewa / Geran (Pajakan Negeri) / Salinan Perjanjian Jual Beli / Surat Akuan Pemilik / Surat Tawaran (Pemilik)',
+    'Salinan Bil Cukai Taksiran',
+    'Salinan Lesen Premis Perniagaan Serta Merta',
+    'Syarat-Syarat Pelesenan',
+  ],
+  PINDAH_MILIK_LESEN: [
+    'Salinan Kad Pengenalan',
+    'Salinan Permohonan Lesen Premis Perniagaan (Mynorisk)',
+    'Salinan Perakuan Pendaftaran (SSM) / Memorandum & Articles of Association / Private Company Limited By Shares',
+    'Salinan Perjanjian Jual Beli / Surat Akuan Pemilik / Surat Tawaran (Pemilik)',
+    'Salinan Bil Cukai Taksiran',
+    'Salinan Lesen Premis Perniagaan Serta Merta',
+    'Surat Akuan Pemohon',
+    'Syarat-Syarat Pelesenan',
+  ],
+};
+
 // Helper to determine PPKP type based on application type
 export function getPPKPRole(applicationType: string): 'PPKP_L' | 'PPKP_P' {
   const config = APPLICATION_TYPES[applicationType as ApplicationTypeKey];

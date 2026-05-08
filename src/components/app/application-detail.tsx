@@ -43,6 +43,7 @@ import {
   formatPlbDecision,
 } from '@/lib/formatters';
 import { WORKFLOW_STEPS, PLB_DECISIONS } from '@/lib/constants';
+import DocumentChecklist from './document-checklist';
 import { canPerformAction, WorkflowAction } from '@/lib/rbac';
 import { toast } from 'sonner';
 
@@ -308,6 +309,11 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Document Checklist Card - always visible for PT and ADMIN */}
+          {(user.role === 'PT' || user.role === 'ADMIN') && (
+            <DocumentChecklist application={app} />
           )}
         </div>
 
