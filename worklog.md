@@ -48,3 +48,30 @@ Stage Summary:
 - Dev server restarted and running as daemon on port 3000
 - All features intact: businessType field in Kaunter form, API handling, detail view
 - App is accessible at localhost:3000 with HTTP 200
+
+---
+Task ID: 3
+Agent: Main
+Task: Add Admin CRUD for applications (Permohonan tab) with table and pagination
+
+Work Log:
+- Added PUT and DELETE API endpoints to /api/applications/[id]/route.ts
+  - PUT: Admin-only update of application fields (applicantName, applicantIc, applicationType, businessType, zone, status, fileNumber, plbDecision, etc.)
+  - DELETE: Admin-only delete with cascade (deletes workflow steps too)
+  - Both check role === 'ADMIN' and return 403 for non-admin users
+- Added new "Permohonan" tab as the first tab in admin-dashboard.tsx
+  - Full CRUD table with columns: No. Rujukan, Nama Pemohon, No. IC/ROC, Jenis, Zon, No. Fail, Status, Dicipta, Tindakan
+  - Filters: search (name/ref/file/IC), status, application type, zone
+  - Pagination: 10 items per page with shadcn Pagination component (page numbers, prev/next, ellipsis)
+  - Create dialog: same fields as Kaunter form (applicant info, application type, businessType for PERMOHONAN_BARU, zone)
+  - Edit dialog: all fields + admin-only fields (fileNumber, status, plbDecision, plbDecisionNotes)
+  - View dialog: read-only detail popup with staff assignments
+  - Delete confirmation: AlertDialog with warning
+- Moved tab order: Permohonan first, then Pengguna, Konfigurasi, KPI, Laporan
+- Tested all API endpoints: GET (200), PUT (200), DELETE (404 for non-existent, 403 for non-admin)
+- Lint passes with no errors
+
+Stage Summary:
+- Admin now has full CRUD for applications with table view and pagination
+- API endpoints secured: PUT/DELETE restricted to ADMIN role
+- Tab "Permohonan" is the default first tab for Admin users

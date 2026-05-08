@@ -61,3 +61,110 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to fetch application' }, { status: 500 });
   }
 }
+
+// PUT /api/applications/[id] - Update application (ADMIN only)
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    const user = authResult.user;
+
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Hanya Pentadbir boleh mengemas kini permohonan.' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const {
+      applicantName,
+      applicantIc,
+      applicantPhone,
+      applicantAddress,
+      applicationType,
+      businessType,
+      zone,
+      fileNumber,
+      status,
+      plbDecision,
+      plbDecisionNotes,
+    } = body;
+
+    // Check application exists
+    const existing = await db.application.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Permohonan tidak dijumpai' }, { status: 404 });
+    }
+
+    // Build update data (only include fields that are provided)
+    const updateData: Record<string, any> = {};
+    if (applicantName !== undefined) updateData.applicantName = applicantName;
+    if (applicantIc !== undefined) updateData.applicantIc = applicantIc;
+    if (applicantPhone !== undefined) updateData.applicantPhone = applicantPhone || null;
+    if (applicantAddress !== undefined) updateData.applicantAddress = applicantAddress || null;
+    if (applicationType !== undefined) updateData.applicationType = applicationType;
+    if (businessType !== undefined) updateData.businessType = businessType || null;
+    if (zone !== undefined) updateData.zone = zone;
+    if (fileNumber !== undefined) updateData.fileNumber = fileNumber || null;
+    if (status !== undefined) updateData.status = status;
+    if (plbDecision !== undefined) updateData.plbDecision = plbDecision || null;
+    if (plbDecisionNotes !== undefined) updateData.plbDecisionNotes = plbDecisionNotes || null;
+
+    const updated = await db.application.update({
+      where: { id },
+      data: updateData,
+      include: {
+        steps: { orderBy: { createdAt: 'asc' } },
+        ptStaff: { select: { id: true, name: true, role: true } },
+        ppkpStaff: { select: { id: true, name: true, role: true } },
+        pplStaff: { select: { id: true, name: true, role: true } },
+        plbStaff: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Application PUT error:', error);
+    return NextResponse.json({ error: 'Gagal mengemas kini permohonan' }, { status: 500 });
+  }
+}
+
+// DELETE /api/applications/[id] - Delete application (ADMIN only)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authResult = requireAuth(request);
+    if ('error' in authResult) return authResult.error;
+    const user = authResult.user;
+
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Hanya Pentadbir boleh memadam permohonan.' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    // Check application exists
+    const existing = await db.application.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Permohonan tidak dijumpai' }, { status: 404 });
+    }
+
+    // Delete with cascade (WorkflowStep has onDelete: Cascade)
+    await db.application.delete({ where: { id } });
+
+    return NextResponse.json({ message: 'Permohonan berjaya dipadam' });
+  } catch (error) {
+    console.error('Application DELETE error:', error);
+    return NextResponse.json({ error: 'Gagal memadam permohonan' }, { status: 500 });
+  }
+}

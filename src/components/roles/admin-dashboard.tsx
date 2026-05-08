@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '@/components/ui/pagination';
+import {
   Users,
   Settings,
   Target,
@@ -58,15 +68,28 @@ import {
   RefreshCw,
   ShieldCheck,
   AlertTriangle,
+  FileText,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  CalendarDays,
 } from 'lucide-react';
 import { useFetch, postData, putData, deleteData } from '@/hooks/use-fetch';
 import { toast } from 'sonner';
-import { APPLICATION_TYPES, ZONES, STAFF_ROLES } from '@/lib/constants';
-import { formatStaffRole, getZoneColor } from '@/lib/formatters';
+import { APPLICATION_TYPES, BUSINESS_TYPES, ZONES, STAFF_ROLES, APPLICATION_STATUSES, PLB_DECISIONS } from '@/lib/constants';
+import {
+  formatStaffRole,
+  getZoneColor,
+  formatApplicationType,
+  formatStatus,
+  getStatusColor,
+  formatDateTime,
+  formatPlbDecision,
+} from '@/lib/formatters';
 import Dashboard from '@/components/app/dashboard';
 import Performance from '@/components/app/performance';
 import DailyReceivedReport from '@/components/reports/daily-received-report';
-import { CalendarDays } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -93,6 +116,32 @@ interface KpiConfig {
   updatedAt: string;
 }
 
+interface ApplicationRow {
+  id: string;
+  referenceNo: string;
+  applicantName: string;
+  applicantIc: string;
+  applicantPhone: string | null;
+  applicantAddress: string | null;
+  applicationType: string;
+  businessType: string | null;
+  zone: string;
+  status: string;
+  fileNumber: string | null;
+  currentStep: string;
+  plbDecision: string | null;
+  plbDecisionNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  applicationTypeLabel: string;
+  isOverdue: boolean;
+  remainingDays: number | null;
+  ptStaff: { id: string; name: string; role: string } | null;
+  ppkpStaff: { id: string; name: string; role: string } | null;
+  pplStaff: { id: string; name: string; role: string } | null;
+  plbStaff: { id: string; name: string; role: string } | null;
+}
+
 interface AdminDashboardProps {
   user: {
     id: string;
@@ -103,11 +152,12 @@ interface AdminDashboardProps {
   };
 }
 
-type TabKey = 'pengguna' | 'konfigurasi' | 'kpi' | 'laporan';
+type TabKey = 'permohonan' | 'pengguna' | 'konfigurasi' | 'kpi' | 'laporan';
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'permohonan', label: 'Permohonan', icon: <FileText className="h-4 w-4" /> },
   { key: 'pengguna', label: 'Pengguna', icon: <Users className="h-4 w-4" /> },
   { key: 'konfigurasi', label: 'Konfigurasi', icon: <Settings className="h-4 w-4" /> },
   { key: 'kpi', label: 'KPI', icon: <Target className="h-4 w-4" /> },
@@ -121,10 +171,17 @@ const ROLE_OPTIONS = Object.entries(STAFF_ROLES).map(([key, val]) => ({
   label: val.label,
 }));
 
+const STATUS_OPTIONS = Object.entries(APPLICATION_STATUSES).map(([key, val]) => ({
+  value: key,
+  label: val.label,
+}));
+
+const ITEMS_PER_PAGE = 10;
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('pengguna');
+  const [activeTab, setActiveTab] = useState<TabKey>('permohonan');
 
   return (
     <div className="space-y-6">
@@ -151,10 +208,758 @@ export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'permohonan' && <PermohonanTab />}
       {activeTab === 'pengguna' && <PenggunaTab />}
       {activeTab === 'konfigurasi' && <KonfigurasiTab />}
       {activeTab === 'kpi' && <KpiTab />}
       {activeTab === 'laporan' && <LaporanTab />}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 0: PERMOHONAN (Application Management - Admin CRUD)
+// ═════════════════════════════════════════════════════════════════════════════
+
+function PermohonanTab() {
+  const { data: applications, loading, error, refetch } = useFetch<ApplicationRow[]>('/api/applications');
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [zoneFilter, setZoneFilter] = useState<string>('ALL');
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Dialogs
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingApp, setEditingApp] = useState<ApplicationRow | null>(null);
+  const [viewingApp, setViewingApp] = useState<ApplicationRow | null>(null);
+  const [deleteApp, setDeleteApp] = useState<ApplicationRow | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [form, setForm] = useState({
+    applicantName: '',
+    applicantIc: '',
+    applicantPhone: '',
+    applicantAddress: '',
+    applicationType: '',
+    businessType: '',
+    businessTypeOther: '',
+    zone: '',
+    fileNumber: '',
+    status: '',
+    plbDecision: '',
+    plbDecisionNotes: '',
+  });
+
+  const resetForm = useCallback(() => {
+    setForm({
+      applicantName: '',
+      applicantIc: '',
+      applicantPhone: '',
+      applicantAddress: '',
+      applicationType: '',
+      businessType: '',
+      businessTypeOther: '',
+      zone: '',
+      fileNumber: '',
+      status: '',
+      plbDecision: '',
+      plbDecisionNotes: '',
+    });
+    setEditingApp(null);
+  }, []);
+
+  const openCreateDialog = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (app: ApplicationRow) => {
+    setEditingApp(app);
+    setForm({
+      applicantName: app.applicantName,
+      applicantIc: app.applicantIc,
+      applicantPhone: app.applicantPhone || '',
+      applicantAddress: app.applicantAddress || '',
+      applicationType: app.applicationType,
+      businessType: app.businessType || '',
+      businessTypeOther: '',
+      zone: app.zone,
+      fileNumber: app.fileNumber || '',
+      status: app.status,
+      plbDecision: app.plbDecision || '',
+      plbDecisionNotes: app.plbDecisionNotes || '',
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.applicantName || !form.applicantIc || !form.applicationType || !form.zone) {
+      toast.error('Sila lengkapkan semua ruangan yang diperlukan');
+      return;
+    }
+
+    if (!editingApp && form.applicationType === 'PERMOHONAN_BARU' && !form.businessType) {
+      toast.error('Jenis Perniagaan diperlukan untuk Permohonan Baru');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingApp) {
+        // Update
+        const body: Record<string, unknown> = {
+          applicantName: form.applicantName,
+          applicantIc: form.applicantIc,
+          applicantPhone: form.applicantPhone || null,
+          applicantAddress: form.applicantAddress || null,
+          applicationType: form.applicationType,
+          businessType: form.businessType === 'Lain-lain' ? form.businessTypeOther : (form.businessType || null),
+          zone: form.zone,
+          fileNumber: form.fileNumber || null,
+          status: form.status,
+          plbDecision: form.plbDecision || null,
+          plbDecisionNotes: form.plbDecisionNotes || null,
+        };
+
+        await putData(`/api/applications/${editingApp.id}`, body);
+        toast.success('Permohonan berjaya dikemas kini');
+      } else {
+        // Create - use same logic as Kaunter
+        const submitData = {
+          applicantName: form.applicantName,
+          applicantIc: form.applicantIc,
+          applicantPhone: form.applicantPhone || undefined,
+          applicantAddress: form.applicantAddress || undefined,
+          applicationType: form.applicationType,
+          businessType: form.applicationType === 'PERMOHONAN_BARU'
+            ? (form.businessType === 'Lain-lain' ? form.businessTypeOther : form.businessType)
+            : undefined,
+          zone: form.zone,
+        };
+        await postData('/api/applications', submitData);
+        toast.success('Permohonan baharu berjaya ditambah');
+      }
+
+      setDialogOpen(false);
+      resetForm();
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa menyimpan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteApp) return;
+    try {
+      await deleteData(`/api/applications/${deleteApp.id}`);
+      toast.success('Permohonan berjaya dipadam');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa memadam');
+    } finally {
+      setDeleteApp(null);
+    }
+  };
+
+  // Filtered applications
+  const filteredApps = (applications || []).filter((app) => {
+    const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
+    const matchesType = typeFilter === 'ALL' || app.applicationType === typeFilter;
+    const matchesZone = zoneFilter === 'ALL' || app.zone === zoneFilter;
+    const matchesSearch =
+      !searchQuery ||
+      app.applicantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.referenceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (app.fileNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.applicantIc.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesType && matchesZone && matchesSearch;
+  });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredApps.length / ITEMS_PER_PAGE));
+  const paginatedApps = filteredApps.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, typeFilter, zoneFilter]);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('ellipsis');
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push('ellipsis');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header + Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Pengurusan Permohonan</h2>
+          <p className="text-sm text-muted-foreground">Tambah, edit, papar, dan padam permohonan</p>
+        </div>
+        <Button onClick={openCreateDialog}>
+          <Plus className="h-4 w-4 mr-2" /> Tambah Permohonan
+        </Button>
+      </div>
+
+      {/* Error banner */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+              <p className="text-sm text-red-600">Gagal memuatkan data: {error}</p>
+            </div>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => refetch()}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Cuba Lagi
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!error && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Cari nama, no. rujukan, no. fail, IC..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Status</SelectItem>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[170px]">
+                  <SelectValue placeholder="Jenis" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Jenis</SelectItem>
+                  {Object.entries(APPLICATION_TYPES).map(([key, val]) => (
+                    <SelectItem key={key} value={key}>
+                      {val.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={zoneFilter} onValueChange={setZoneFilter}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Zon" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Zon</SelectItem>
+                  {ZONES.map((z) => (
+                    <SelectItem key={z} value={z}>
+                      Zon {z}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" size="icon" onClick={() => refetch()} title="Muat semula">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Memuatkan...</span>
+                </div>
+              ) : filteredApps.length === 0 ? (
+                <div className="py-12 text-center">
+                  <FileText className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">Tiada permohonan dijumpai</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[130px]">No. Rujukan</TableHead>
+                        <TableHead className="min-w-[130px]">Nama Pemohon</TableHead>
+                        <TableHead className="min-w-[100px]">No. IC/ROC</TableHead>
+                        <TableHead className="min-w-[120px]">Jenis</TableHead>
+                        <TableHead className="min-w-[80px]">Zon</TableHead>
+                        <TableHead className="min-w-[100px]">No. Fail</TableHead>
+                        <TableHead className="min-w-[110px]">Status</TableHead>
+                        <TableHead className="min-w-[90px]">Dicipta</TableHead>
+                        <TableHead className="min-w-[130px] text-right">Tindakan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedApps.map((app) => (
+                        <TableRow key={app.id} className={app.isOverdue ? 'bg-red-50/50' : undefined}>
+                          <TableCell className="font-mono text-xs">{app.referenceNo}</TableCell>
+                          <TableCell className="font-medium max-w-[130px] truncate">{app.applicantName}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground font-mono">{app.applicantIc}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">
+                              {app.applicationTypeLabel}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>
+                              Zon {app.zone}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs font-mono">{app.fileNumber || '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-[10px] ${getStatusColor(app.status)}`}>
+                              {formatStatus(app.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{formatDateTime(app.createdAt)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setViewingApp(app)}
+                                title="Papar"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditDialog(app)}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteApp(app)}
+                                title="Padam"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pagination */}
+          {!loading && filteredApps.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Menunjukkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredApps.length)} daripada {filteredApps.length} permohonan
+              </p>
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {getPageNumbers().map((page, i) =>
+                      page === 'ellipsis' ? (
+                        <PaginationItem key={`ellipsis-${i}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            isActive={currentPage === page}
+                            onClick={() => setCurrentPage(page)}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* View Dialog */}
+      <Dialog open={!!viewingApp} onOpenChange={(open) => { if (!open) setViewingApp(null); }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Butiran Permohonan</DialogTitle>
+            <DialogDescription>
+              {viewingApp?.referenceNo}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingApp && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Nama Pemohon</p>
+                  <p className="font-medium">{viewingApp.applicantName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">No. IC/ROC</p>
+                  <p className="font-mono">{viewingApp.applicantIc}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Telefon</p>
+                  <p>{viewingApp.applicantPhone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Zon</p>
+                  <Badge variant="outline" className={`text-xs ${getZoneColor(viewingApp.zone)}`}>
+                    Zon {viewingApp.zone}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Jenis Permohonan</p>
+                  <p>{viewingApp.applicationTypeLabel}</p>
+                </div>
+                {viewingApp.businessType && (
+                  <div>
+                    <p className="text-muted-foreground text-xs">Jenis Perniagaan</p>
+                    <p>{viewingApp.businessType}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-muted-foreground text-xs">No. Fail</p>
+                  <p className="font-mono">{viewingApp.fileNumber || 'Belum didaftarkan'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Status</p>
+                  <Badge variant="outline" className={`text-xs ${getStatusColor(viewingApp.status)}`}>
+                    {formatStatus(viewingApp.status)}
+                  </Badge>
+                </div>
+                {viewingApp.plbDecision && (
+                  <>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Keputusan PLB</p>
+                      <p>{formatPlbDecision(viewingApp.plbDecision)}</p>
+                    </div>
+                    {viewingApp.plbDecisionNotes && (
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground text-xs">Catatan Keputusan</p>
+                        <p>{viewingApp.plbDecisionNotes}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              {viewingApp.applicantAddress && (
+                <div className="text-sm">
+                  <p className="text-muted-foreground text-xs">Alamat</p>
+                  <p>{viewingApp.applicantAddress}</p>
+                </div>
+              )}
+              <Separator />
+              <div className="text-sm space-y-1">
+                <p className="text-muted-foreground text-xs">Staf Bertugas</p>
+                {viewingApp.ptStaff && <p><span className="text-muted-foreground">PT:</span> {viewingApp.ptStaff.name}</p>}
+                {viewingApp.ppkpStaff && <p><span className="text-muted-foreground">{formatStaffRole(viewingApp.ppkpStaff.role)}:</span> {viewingApp.ppkpStaff.name}</p>}
+                {viewingApp.pplStaff && <p><span className="text-muted-foreground">{formatStaffRole(viewingApp.pplStaff.role)}:</span> {viewingApp.pplStaff.name}</p>}
+                {viewingApp.plbStaff && <p><span className="text-muted-foreground">PLB:</span> {viewingApp.plbStaff.name}</p>}
+              </div>
+              <Separator />
+              <div className="text-xs text-muted-foreground">
+                <p>Dicipta: {formatDateTime(viewingApp.createdAt)}</p>
+                <p>Kemas kini: {formatDateTime(viewingApp.updatedAt)}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewingApp(null)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); resetForm(); } }}>
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingApp ? 'Edit Permohonan' : 'Tambah Permohonan Baharu'}</DialogTitle>
+            <DialogDescription>
+              {editingApp
+                ? 'Kemas kini maklumat permohonan. Nombor rujukan tidak boleh diubah.'
+                : 'Isikan maklumat permohonan baharu.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {/* Applicant Info */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold">Maklumat Pemohon</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="app-applicantName">Nama Pemohon *</Label>
+                  <Input
+                    id="app-applicantName"
+                    value={form.applicantName}
+                    onChange={(e) => setForm((f) => ({ ...f, applicantName: e.target.value }))}
+                    placeholder="Nama penuh / syarikat"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="app-applicantIc">No. IC / ROC *</Label>
+                  <Input
+                    id="app-applicantIc"
+                    value={form.applicantIc}
+                    onChange={(e) => setForm((f) => ({ ...f, applicantIc: e.target.value }))}
+                    placeholder="IC / No. pendaftaran syarikat"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="app-applicantPhone">No. Telefon</Label>
+                  <Input
+                    id="app-applicantPhone"
+                    value={form.applicantPhone}
+                    onChange={(e) => setForm((f) => ({ ...f, applicantPhone: e.target.value }))}
+                    placeholder="01x-xxxxxxx"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="app-applicantAddress">Alamat</Label>
+                  <Input
+                    id="app-applicantAddress"
+                    value={form.applicantAddress}
+                    onChange={(e) => setForm((f) => ({ ...f, applicantAddress: e.target.value }))}
+                    placeholder="Alamat pemohon"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Application Details */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold">Maklumat Permohonan</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>Jenis Permohonan *</Label>
+                  <Select
+                    value={form.applicationType}
+                    onValueChange={(v) => setForm((f) => ({
+                      ...f,
+                      applicationType: v,
+                      businessType: v !== 'PERMOHONAN_BARU' ? '' : f.businessType,
+                      businessTypeOther: v !== 'PERMOHONAN_BARU' ? '' : f.businessTypeOther,
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(APPLICATION_TYPES).map(([key, val]) => (
+                        <SelectItem key={key} value={key}>
+                          {val.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Zon *</Label>
+                  <Select value={form.zone || 'NONE'} onValueChange={(v) => setForm((f) => ({ ...f, zone: v === 'NONE' ? '' : v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih Zon" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ZONES.map((z) => (
+                        <SelectItem key={z} value={z}>
+                          Zon {z}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Business Type for PERMOHONAN_BARU */}
+              {form.applicationType === 'PERMOHONAN_BARU' && (
+                <div className="grid gap-2">
+                  <Label>Jenis Perniagaan *</Label>
+                  <Select
+                    value={form.businessType}
+                    onValueChange={(v) => setForm((f) => ({ ...f, businessType: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis perniagaan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BUSINESS_TYPES.map((bt) => (
+                        <SelectItem key={bt} value={bt}>
+                          {bt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.businessType === 'Lain-lain' && (
+                    <Input
+                      value={form.businessTypeOther}
+                      onChange={(e) => setForm((f) => ({ ...f, businessTypeOther: e.target.value }))}
+                      placeholder="Nyatakan jenis perniagaan..."
+                      className="mt-1"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Edit-only fields */}
+            {editingApp && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">Pentadbiran</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label>Nombor Fail</Label>
+                      <Input
+                        value={form.fileNumber}
+                        onChange={(e) => setForm((f) => ({ ...f, fileNumber: e.target.value }))}
+                        placeholder="cth: MPSP/L/2024/001"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Status</Label>
+                      <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {(form.status === 'COMPLETED' || form.status === 'REJECTED') && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid gap-2">
+                        <Label>Keputusan PLB</Label>
+                        <Select value={form.plbDecision || 'NONE'} onValueChange={(v) => setForm((f) => ({ ...f, plbDecision: v === 'NONE' ? '' : v }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih keputusan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="NONE">Tiada</SelectItem>
+                            {Object.entries(PLB_DECISIONS).map(([key, val]) => (
+                              <SelectItem key={key} value={key}>
+                                {val.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Catatan Keputusan</Label>
+                        <Input
+                          value={form.plbDecisionNotes}
+                          onChange={(e) => setForm((f) => ({ ...f, plbDecisionNotes: e.target.value }))}
+                          placeholder="Catatan..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
+              Batal
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingApp ? 'Simpan Perubahan' : 'Tambah Permohonan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteApp} onOpenChange={(open) => { if (!open) setDeleteApp(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">⚠️ Padam Permohonan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Adakah anda pasti ingin memadam permohonan <strong>{deleteApp?.referenceNo}</strong> ({deleteApp?.applicantName})?
+              Tindakan ini <strong>tidak boleh dibatalkan</strong>. Semua data permohonan dan langkah proses akan dipadamkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Padam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -297,7 +1102,7 @@ function PenggunaTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header + Actions - always visible */}
+      {/* Header + Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Pengurusan Pengguna</h2>
@@ -308,7 +1113,6 @@ function PenggunaTab() {
         </Button>
       </div>
 
-      {/* Error banner - shown inline, does not block the Add User button */}
       {error && (
         <Card className="border-red-200 bg-red-50">
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -323,7 +1127,6 @@ function PenggunaTab() {
         </Card>
       )}
 
-      {/* Filters & Table - shown when no error */}
       {!error && (
       <>
       <div className="flex flex-col sm:flex-row gap-3">
@@ -351,7 +1154,6 @@ function PenggunaTab() {
         </Select>
       </div>
 
-      {/* Users Table */}
       <Card>
         <CardContent className="p-0">
           {loading ? (
@@ -450,7 +1252,6 @@ function PenggunaTab() {
         </CardContent>
       </Card>
 
-      {/* User count */}
       {!loading && filteredUsers.length > 0 && (
         <p className="text-xs text-muted-foreground text-right">
           Menunjukkan {filteredUsers.length} daripada {users?.length || 0} pengguna
@@ -702,7 +1503,6 @@ function KonfigurasiTab() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* PPKP(L) Route */}
             <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-8 w-8 rounded-full bg-emerald-200 flex items-center justify-center">
@@ -725,7 +1525,6 @@ function KonfigurasiTab() {
               </div>
             </div>
 
-            {/* PPKP(P) Route */}
             <div className="rounded-xl border-2 border-teal-200 bg-teal-50 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-8 w-8 rounded-full bg-teal-200 flex items-center justify-center">
@@ -784,7 +1583,6 @@ function KpiTab() {
   const [editMap, setEditMap] = useState<Record<string, { slaDays: string; warningDays: string; isActive: boolean }>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
-  // Sync edit state when configs load
   useEffect(() => {
     if (configs) {
       const map: Record<string, { slaDays: string; warningDays: string; isActive: boolean }> = {};
@@ -861,7 +1659,6 @@ function KpiTab() {
       refetch();
     } catch (err: any) {
       toast.error(err.message || 'Gagal mengemas kini status');
-      // Revert on error
       setEditMap((m) => ({
         ...m,
         [stepName]: { ...m[stepName], isActive: !newActive },
@@ -930,7 +1727,7 @@ function KpiTab() {
                       <TableRow key={config.id}>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-sm">{formatStepName(config.stepName)}</p>
+                            <p className="font-medium text-sm">{formatStepNameLocal(config.stepName)}</p>
                             <p className="text-xs text-muted-foreground">{config.stepName}</p>
                           </div>
                         </TableCell>
@@ -1014,8 +1811,8 @@ function KpiTab() {
   );
 }
 
-// Helper to format step names (same as in formatters but local fallback)
-function formatStepName(step: string): string {
+// Helper to format step names (local fallback)
+function formatStepNameLocal(step: string): string {
   const map: Record<string, string> = {
     PT_FILE_OPENING: 'Pembukaan Fail PT',
     PPKP_PROCESSING: 'Pemprosesan PPKP',
@@ -1051,15 +1848,17 @@ function LaporanTab() {
 
       <Separator />
 
-      {/* Dashboard Component */}
+      {/* Dashboard */}
       <div>
+        <h3 className="text-base font-semibold mb-4">Papan Pemuka</h3>
         <Dashboard />
       </div>
 
       <Separator />
 
-      {/* Performance Component */}
+      {/* Performance */}
       <div>
+        <h3 className="text-base font-semibold mb-4">Prestasi Proses</h3>
         <Performance />
       </div>
     </div>
