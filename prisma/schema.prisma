@@ -36,6 +36,8 @@ model Application {
   applicantAddress String?
   applicationType  String   // PERMOHONAN_BARU, TUKAR_NAMA_SYARIKAT, TAMBAH_KURANG_PREMIS, TAMBAH_TUKAR_AKTIVITI, PINDAH_MILIK_LESEN
   businessType     String?  // Jenis perniagaan (for PERMOHONAN_BARU)
+  businessName     String?  // Nama Perniagaan (for sticker)
+  accountNo        String?  // No. Akaun (for sticker)
   zone             String
   status           String
   fileNumber       String?

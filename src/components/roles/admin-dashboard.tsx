@@ -125,6 +125,8 @@ interface ApplicationRow {
   applicantAddress: string | null;
   applicationType: string;
   businessType: string | null;
+  businessName: string | null;
+  accountNo: string | null;
   zone: string;
   status: string;
   fileNumber: string | null;
@@ -249,6 +251,8 @@ function PermohonanTab() {
     applicationType: '',
     businessType: '',
     businessTypeOther: '',
+    businessName: '',
+    accountNo: '',
     zone: '',
     fileNumber: '',
     status: '',
@@ -265,6 +269,8 @@ function PermohonanTab() {
       applicationType: '',
       businessType: '',
       businessTypeOther: '',
+      businessName: '',
+      accountNo: '',
       zone: '',
       fileNumber: '',
       status: '',
@@ -289,6 +295,8 @@ function PermohonanTab() {
       applicationType: app.applicationType,
       businessType: app.businessType || '',
       businessTypeOther: '',
+      businessName: app.businessName || '',
+      accountNo: app.accountNo || '',
       zone: app.zone,
       fileNumber: app.fileNumber || '',
       status: app.status,
@@ -320,6 +328,8 @@ function PermohonanTab() {
           applicantAddress: form.applicantAddress || null,
           applicationType: form.applicationType,
           businessType: form.businessType === 'Lain-lain' ? form.businessTypeOther : (form.businessType || null),
+          businessName: form.businessName || null,
+          accountNo: form.accountNo || null,
           zone: form.zone,
           fileNumber: form.fileNumber || null,
           status: form.status,
@@ -340,6 +350,8 @@ function PermohonanTab() {
           businessType: form.applicationType === 'PERMOHONAN_BARU'
             ? (form.businessType === 'Lain-lain' ? form.businessTypeOther : form.businessType)
             : undefined,
+          businessName: form.businessName || undefined,
+          accountNo: form.accountNo || undefined,
           zone: form.zone,
         };
         await postData('/api/applications', submitData);
@@ -863,6 +875,26 @@ function PermohonanTab() {
                   )}
                 </div>
               )}
+
+              {/* Business Name and Account No */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>Nama Perniagaan</Label>
+                  <Input
+                    value={form.businessName}
+                    onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
+                    placeholder="Nama syarikat / perniagaan"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>No. Akaun</Label>
+                  <Input
+                    value={form.accountNo}
+                    onChange={(e) => setForm((f) => ({ ...f, accountNo: e.target.value }))}
+                    placeholder="No. akaun"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Edit-only fields */}

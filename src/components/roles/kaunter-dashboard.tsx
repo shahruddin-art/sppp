@@ -105,6 +105,8 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
     applicationType: '',
     businessType: '',
     businessTypeOther: '',
+    businessName: '',
+    accountNo: '',
     zone: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -149,6 +151,8 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
         applicationType: '',
         businessType: '',
         businessTypeOther: '',
+        businessName: '',
+        accountNo: '',
         zone: '',
       });
     } catch (error: any) {
@@ -314,6 +318,28 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                   )}
                 </div>
               )}
+
+              {/* Business Name and Account No */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="businessName">Nama Perniagaan</Label>
+                  <Input
+                    id="businessName"
+                    value={formData.businessName}
+                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                    placeholder="Nama syarikat / perniagaan"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountNo">No. Akaun</Label>
+                  <Input
+                    id="accountNo"
+                    value={formData.accountNo}
+                    onChange={(e) => setFormData({ ...formData, accountNo: e.target.value })}
+                    placeholder="No. akaun"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Routing Preview */}

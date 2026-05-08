@@ -20,6 +20,8 @@ interface Application {
   applicantAddress: string | null;
   applicationType: string;
   businessType: string | null;
+  businessName: string | null;
+  accountNo: string | null;
   zone: string;
   status: string;
   fileNumber: string | null;

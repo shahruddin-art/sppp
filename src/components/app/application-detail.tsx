@@ -44,6 +44,7 @@ import {
 } from '@/lib/formatters';
 import { WORKFLOW_STEPS, PLB_DECISIONS } from '@/lib/constants';
 import DocumentChecklist from './document-checklist';
+import FileSticker from './file-sticker';
 import { canPerformAction, WorkflowAction } from '@/lib/rbac';
 import { toast } from 'sonner';
 
@@ -75,6 +76,8 @@ interface Application {
   applicantAddress: string | null;
   applicationType: string;
   businessType: string | null;
+  businessName: string | null;
+  accountNo: string | null;
   zone: string;
   status: string;
   fileNumber: string | null;
@@ -187,6 +190,10 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
           <h2 className="font-semibold text-lg truncate">{app.applicantName}</h2>
           <p className="text-sm text-muted-foreground font-mono">{app.referenceNo}</p>
         </div>
+        {/* Sticker print button - PT and ADMIN only, requires file number */}
+        {(user.role === 'PT' || user.role === 'ADMIN') && app.fileNumber && (
+          <FileSticker application={app} />
+        )}
         <Badge variant="outline" className={`shrink-0 ${getStatusColor(app.status)}`}>
           {formatStatus(app.status)}
         </Badge>
@@ -233,6 +240,18 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
                 <div className="flex justify-between items-center min-w-0 gap-2">
                   <span className="text-muted-foreground shrink-0">Jenis Perniagaan</span>
                   <span className="font-medium text-sm truncate">{app.businessType}</span>
+                </div>
+              )}
+              {app.businessName && (
+                <div className="flex justify-between items-center min-w-0 gap-2">
+                  <span className="text-muted-foreground shrink-0">Nama Perniagaan</span>
+                  <span className="font-medium text-sm truncate">{app.businessName}</span>
+                </div>
+              )}
+              {app.accountNo && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">No. Akaun</span>
+                  <span className="font-mono">{app.accountNo}</span>
                 </div>
               )}
               <div className="flex justify-between">

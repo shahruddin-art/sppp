@@ -88,6 +88,8 @@ export async function PUT(
       applicantAddress,
       applicationType,
       businessType,
+      businessName,
+      accountNo,
       zone,
       fileNumber,
       status,
@@ -109,6 +111,8 @@ export async function PUT(
     if (applicantAddress !== undefined) updateData.applicantAddress = applicantAddress || null;
     if (applicationType !== undefined) updateData.applicationType = applicationType;
     if (businessType !== undefined) updateData.businessType = businessType || null;
+    if (businessName !== undefined) updateData.businessName = businessName || null;
+    if (accountNo !== undefined) updateData.accountNo = accountNo || null;
     if (zone !== undefined) updateData.zone = zone;
     if (fileNumber !== undefined) updateData.fileNumber = fileNumber || null;
     if (status !== undefined) updateData.status = status;

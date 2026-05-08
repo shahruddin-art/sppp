@@ -103,3 +103,41 @@ Stage Summary:
 - Print button generates a one-page A4 document matching the official checklist format
 - File number printed at top center in 18pt bold Arial
 - All other text in Arial 12pt with circled numbers (no checkbox squares)
+
+---
+Task ID: 5
+Agent: Main
+Task: Add file sticker printing function for PT with official format from PDF
+
+Work Log:
+- Read uploaded PDF (2175_001.pdf) - image-based, used VLM to extract layout
+- Identified sticker format: 3 stickers per A4 page, each with:
+  - File number twice at top (14pt bold) and once large in center (46pt bold)
+  - Table with: JENIS LESEN, NAMA PERNIAGAAN, NAMA PELESEN + No. Pendaftaran + No. Telefon, ALAMAT PERNIAGAAN, TARIKH + NO. AKAUN
+  - All uppercase, borders around each sticker and table cells
+- Added `businessName` and `accountNo` fields to Prisma schema (Application model)
+- Ran db:push to sync schema with SQLite database
+- Updated API routes:
+  - POST /api/applications: handles businessName and accountNo
+  - PUT /api/applications/[id]: handles businessName and accountNo updates
+- Created FileSticker component (src/components/app/file-sticker.tsx):
+  - Generates 3 identical stickers per A4 page
+  - File number: 2x at top (14pt bold Arial) + 1x center (46pt bold Arial)
+  - All text UPPERCASE
+  - Table with bordered cells (30% label, 70% value)
+  - NAMA PELESEN row has 3 sub-columns: Name | IC/SSM No. | Phone
+  - TARIKH row has date + NO.AKAUN
+  - Word wrap enabled in all cells
+- Integrated FileSticker button in application-detail.tsx header (PT and ADMIN only, requires fileNumber)
+- Added businessName and accountNo display in applicant details card
+- Updated Application interface in application-detail.tsx and document-checklist.tsx
+- Updated kaunter-dashboard.tsx form with businessName and accountNo fields
+- Updated admin-dashboard.tsx form with businessName and accountNo fields (form state, reset, edit, save)
+- Lint passes clean, app returns HTTP 200
+
+Stage Summary:
+- File sticker printing function available for PT and ADMIN roles
+- Sticker format: 3 per A4 page, matching official MBI format from PDF
+- All text UPPERCASE, file number at 14pt (top) and 46pt (center)
+- New schema fields: businessName (Nama Perniagaan), accountNo (No. Akaun)
+- Forms updated in both Kaunter and Admin dashboards

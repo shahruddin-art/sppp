@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { applicantName, applicantIc, applicantPhone, applicantAddress, applicationType, businessType, zone } = body;
+    const { applicantName, applicantIc, applicantPhone, applicantAddress, applicationType, businessType, businessName, accountNo, zone } = body;
 
     // Validate required fields
     if (!applicantName || !applicantIc || !applicationType || !zone) {
@@ -136,6 +136,8 @@ export async function POST(request: Request) {
           applicantAddress: applicantAddress || null,
           applicationType,
           businessType: businessType || null,
+          businessName: businessName || null,
+          accountNo: accountNo || null,
           zone,
           status: 'PENDING_PT',
           currentStep: 'PT_FILE_OPENING',
