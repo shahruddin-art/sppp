@@ -43,6 +43,24 @@ export const STAFF_ROLES = {
   PLB: { label: 'Pengarah Pelesenan Bandaraya (PLB)' },
 } as const;
 
+// Business types (for PERMOHONAN_BARU)
+export const BUSINESS_TYPES = [
+  'Restoran / Kedai Makan',
+  'Kedai Runcit / Minimart',
+  'Pasar Malam / Gerak Kerja',
+  'Bidan / Klinik',
+  'Salun Kecantikan / Pendandan Rambut',
+  'Dobi / Cucian',
+  'Stesen Minyak',
+  'Bengkel Kenderaan',
+  'Perkilangan / Kilang',
+  'Pengangkutan / Logistik',
+  'Pendidikan / Tuisyen',
+  'Perkhidmatan Profesional',
+  'Pertanian / Akuakultur',
+  'Lain-lain',
+] as const;
+
 // Zones
 export const ZONES = ['A', 'B', 'C', 'D', 'E'] as const;
 export type Zone = (typeof ZONES)[number];

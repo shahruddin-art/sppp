@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useFetch, postData } from '@/hooks/use-fetch';
-import { APPLICATION_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { APPLICATION_TYPES, BUSINESS_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
 import {
   formatStatus,
   getStatusColor,
@@ -104,6 +104,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
     applicantAddress: '',
     applicationType: '',
     businessType: '',
+    businessTypeOther: '',
     zone: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -125,9 +126,19 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
       return;
     }
 
+    if (formData.businessType === 'Lain-lain' && !formData.businessTypeOther) {
+      toast.error('Sila nyatakan jenis perniagaan');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const result = await postData('/api/applications', formData);
+      const submitData = {
+        ...formData,
+        businessType: formData.businessType === 'Lain-lain' ? formData.businessTypeOther : formData.businessType,
+      };
+      delete (submitData as any).businessTypeOther;
+      const result = await postData('/api/applications', submitData);
       setSubmitted(result);
       toast.success('Permohonan berjaya didaftarkan!');
       setFormData({
@@ -137,6 +148,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
         applicantAddress: '',
         applicationType: '',
         businessType: '',
+        businessTypeOther: '',
         zone: '',
       });
     } catch (error: any) {
@@ -238,7 +250,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                   <Label htmlFor="applicationType">Jenis Permohonan *</Label>
                   <Select
                     value={formData.applicationType}
-                    onValueChange={(val) => setFormData({ ...formData, applicationType: val, businessType: val !== 'PERMOHONAN_BARU' ? '' : formData.businessType })}
+                    onValueChange={(val) => setFormData({ ...formData, applicationType: val, businessType: val !== 'PERMOHONAN_BARU' ? '' : formData.businessType, businessTypeOther: val !== 'PERMOHONAN_BARU' ? '' : formData.businessTypeOther })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis permohonan" />
@@ -277,13 +289,29 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
               {formData.applicationType === 'PERMOHONAN_BARU' && (
                 <div className="space-y-1.5">
                   <Label htmlFor="businessType">Jenis Perniagaan *</Label>
-                  <Input
-                    id="businessType"
+                  <Select
                     value={formData.businessType}
-                    onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                    placeholder="Cth: Restoran, Kedai runcit, Bidan, dll."
-                    required
-                  />
+                    onValueChange={(val) => setFormData({ ...formData, businessType: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis perniagaan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BUSINESS_TYPES.map((bt) => (
+                        <SelectItem key={bt} value={bt}>
+                          {bt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.businessType === 'Lain-lain' && (
+                    <Input
+                      value={formData.businessTypeOther || ''}
+                      onChange={(e) => setFormData({ ...formData, businessTypeOther: e.target.value })}
+                      placeholder="Nyatakan jenis perniagaan..."
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               )}
             </div>
