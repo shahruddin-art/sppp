@@ -2,11 +2,22 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Helper to get admin session from request
+function getAdminSession(request: Request) {
+  const session = getSessionFromRequest(request);
+  if (!session || session.role !== 'ADMIN') return null;
+  return session;
+}
+
 // GET /api/admin/kpi - List all KPI configs (Admin only)
 export async function GET(request: Request) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 
@@ -24,8 +35,8 @@ export async function GET(request: Request) {
 // POST /api/admin/kpi - Create or update KPI config (Admin only)
 export async function POST(request: Request) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 

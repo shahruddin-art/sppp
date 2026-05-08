@@ -93,20 +93,33 @@ export function verifySessionToken(token: string): UserSession | null {
 }
 
 /**
- * Extract and verify session from request cookies
+ * Extract and verify session from request.
+ * Checks both Authorization header (Bearer token) and Cookie header.
  */
 export function getSessionFromRequest(request: Request): UserSession | null {
+  // 1. Try Authorization header first (most reliable with proxies)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const session = verifySessionToken(token);
+    if (session) return session;
+  }
+
+  // 2. Fallback to Cookie header
   const cookieHeader = request.headers.get('cookie');
-  if (!cookieHeader) return null;
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce<Record<string, string>>((acc, c) => {
+      const [key, ...val] = c.trim().split('=');
+      acc[key] = val.join('=');
+      return acc;
+    }, {});
 
-  const cookies = cookieHeader.split(';').reduce<Record<string, string>>((acc, c) => {
-    const [key, ...val] = c.trim().split('=');
-    acc[key] = val.join('=');
-    return acc;
-  }, {});
+    const sessionToken = cookies['session'];
+    if (sessionToken) {
+      const session = verifySessionToken(sessionToken);
+      if (session) return session;
+    }
+  }
 
-  const sessionToken = cookies['session'];
-  if (!sessionToken) return null;
-
-  return verifySessionToken(sessionToken);
+  return null;
 }

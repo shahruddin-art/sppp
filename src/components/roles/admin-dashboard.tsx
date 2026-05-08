@@ -59,12 +59,14 @@ import {
   ShieldCheck,
   AlertTriangle,
 } from 'lucide-react';
-import { useFetch, postData } from '@/hooks/use-fetch';
+import { useFetch, postData, putData, deleteData } from '@/hooks/use-fetch';
 import { toast } from 'sonner';
 import { APPLICATION_TYPES, ZONES, STAFF_ROLES } from '@/lib/constants';
 import { formatStaffRole, getZoneColor } from '@/lib/formatters';
 import Dashboard from '@/components/app/dashboard';
 import Performance from '@/components/app/performance';
+import DailyReceivedReport from '@/components/reports/daily-received-report';
+import { CalendarDays } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -230,15 +232,7 @@ function PenggunaTab() {
         };
         if (form.password) body.password = form.password;
 
-        const res = await fetch(`/api/admin/users/${editingUser.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Gagal mengemas kini pengguna');
-        }
+        await putData(`/api/admin/users/${editingUser.id}`, body);
         toast.success('Pengguna berjaya dikemas kini');
       } else {
         // Create
@@ -267,11 +261,7 @@ function PenggunaTab() {
   const handleDeactivate = async () => {
     if (!deactivateUser) return;
     try {
-      const res = await fetch(`/api/admin/users/${deactivateUser.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Gagal menyahaktifkan pengguna');
-      }
+      await deleteData(`/api/admin/users/${deactivateUser.id}`);
       toast.success('Pengguna berjaya dinyahaktifkan');
       refetch();
     } catch (err: any) {
@@ -284,11 +274,7 @@ function PenggunaTab() {
   const handleDelete = async () => {
     if (!deleteUser) return;
     try {
-      const res = await fetch(`/api/admin/users/${deleteUser.id}?permanent=true`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Gagal memadam pengguna');
-      }
+      await deleteData(`/api/admin/users/${deleteUser.id}?permanent=true`);
       toast.success('Pengguna berjaya dipadam secara kekal');
       refetch();
     } catch (err: any) {
@@ -309,23 +295,9 @@ function PenggunaTab() {
     return matchesRole && matchesSearch;
   });
 
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <AlertTriangle className="h-8 w-8 mx-auto text-red-500 mb-2" />
-          <p className="text-sm text-red-600">Gagal memuatkan data pengguna</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Cuba Lagi
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      {/* Header + Actions */}
+      {/* Header + Actions - always visible */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Pengurusan Pengguna</h2>
@@ -336,7 +308,24 @@ function PenggunaTab() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Error banner - shown inline, does not block the Add User button */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+              <p className="text-sm text-red-600">Gagal memuatkan data pengguna: {error}</p>
+            </div>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => refetch()}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Cuba Lagi
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters & Table - shown when no error */}
+      {!error && (
+      <>
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -466,6 +455,8 @@ function PenggunaTab() {
         <p className="text-xs text-muted-foreground text-right">
           Menunjukkan {filteredUsers.length} daripada {users?.length || 0} pengguna
         </p>
+      )}
+      </>
       )}
 
       {/* Create / Edit Dialog */}
@@ -1045,6 +1036,17 @@ function LaporanTab() {
         <p className="text-sm text-muted-foreground">
           Paparan statistik keseluruhan proses permohonan dan prestasi sistem
         </p>
+      </div>
+
+      <Separator />
+
+      {/* Daily Received Report */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="h-5 w-5 text-sky-600" />
+          <h3 className="text-base font-semibold">Laporan Penerimaan Harian</h3>
+        </div>
+        <DailyReceivedReport userRole="ADMIN" />
       </div>
 
       <Separator />

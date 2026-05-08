@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth, canPerformAction, canPerformActionOnZone, isActionStatusValid, WorkflowAction } from '@/lib/rbac';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/applications/[id]/action - Process workflow action
 export async function POST(
   request: Request,
@@ -58,8 +60,6 @@ export async function POST(
 
     // ── Assignment check for PPKP/PPL/PLB ──
     if (action === 'PPKP_COMPLETE' && application.ppkpStaffId && application.ppkpStaffId !== user.id) {
-      // Allow if same role but different user (in case of reassignment), but log warning
-      // Strict check: only the assigned PPKP can complete
       const ppkpStaff = await db.user.findUnique({ where: { id: application.ppkpStaffId } });
       if (ppkpStaff && ppkpStaff.role === user.role && ppkpStaff.id !== user.id) {
         return NextResponse.json(
@@ -102,33 +102,44 @@ export async function POST(
         // PT opens the file
         const step = application.steps.find(s => s.step === 'PT_FILE_OPENING' && s.status !== 'COMPLETED');
         if (!step) {
-          return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
+          return NextResponse.json({ error: 'Langkah pembukaan fail tidak dijumpai atau sudah selesai. Sila muat semula halaman.' }, { status: 400 });
         }
 
-        await db.workflowStep.update({
-          where: { id: step.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: now,
-            comments: comments || `Fail berjaya dibuka oleh ${user.name}`,
-          },
-        });
-
-        // Start PT file registration step
+        // Validate PT_FILE_REGISTRATION step exists before proceeding
         const regStep = application.steps.find(s => s.step === 'PT_FILE_REGISTRATION');
-        if (regStep) {
-          await db.workflowStep.update({
+        if (!regStep) {
+          return NextResponse.json(
+            { error: 'Langkah pendaftaran fail tidak dijumpai. Permohonan mungkin tidak dibuat dengan betul. Sila hubungi pentadbir.' },
+            { status: 400 }
+          );
+        }
+
+        // Use transaction for atomicity
+        await db.$transaction(async (tx) => {
+          // Complete PT_FILE_OPENING step
+          await tx.workflowStep.update({
+            where: { id: step.id },
+            data: {
+              status: 'COMPLETED',
+              completedAt: now,
+              comments: comments || `Fail berjaya dibuka oleh ${user.name}`,
+            },
+          });
+
+          // Start PT file registration step
+          await tx.workflowStep.update({
             where: { id: regStep.id },
             data: {
               status: 'IN_PROGRESS',
               startedAt: now,
             },
           });
-        }
 
-        await db.application.update({
-          where: { id },
-          data: { status: 'PT_PROCESSING', currentStep: 'PT_FILE_REGISTRATION', updatedAt: now },
+          // Update application status
+          await tx.application.update({
+            where: { id },
+            data: { status: 'PT_PROCESSING', currentStep: 'PT_FILE_REGISTRATION', updatedAt: now },
+          });
         });
         break;
       }
@@ -139,43 +150,57 @@ export async function POST(
           return NextResponse.json({ error: 'Nombor fail diperlukan' }, { status: 400 });
         }
 
-        const regStep = application.steps.find(s => s.step === 'PT_FILE_REGISTRATION' && s.status !== 'COMPLETED');
+        const regStep = application.steps.find(s => s.step === 'PT_FILE_REGISTRATION');
         if (!regStep) {
-          return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Langkah pendaftaran fail tidak dijumpai. Permohonan mungkin tidak dibuat dengan betul. Sila hubungi pentadbir.' },
+            { status: 400 }
+          );
         }
 
-        await db.workflowStep.update({
-          where: { id: regStep.id },
-          data: {
-            status: 'COMPLETED',
-            startedAt: now,
-            completedAt: now,
-            comments: `No. Fail: ${fileNumber} (didaftarkan oleh ${user.name})`,
-          },
-        });
+        if (regStep.status === 'COMPLETED') {
+          return NextResponse.json(
+            { error: 'Nombor fail telah didaftarkan sebelumnya. Sila muat semula halaman.' },
+            { status: 400 }
+          );
+        }
 
-        // Start PPKP processing
-        const ppkpStep = application.steps.find(s => s.step === 'PPKP_PROCESSING');
-        const ppkpSlaDeadline = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
-        if (ppkpStep) {
-          await db.workflowStep.update({
-            where: { id: ppkpStep.id },
+        // Use transaction for atomicity
+        await db.$transaction(async (tx) => {
+          // Complete PT_FILE_REGISTRATION step (do NOT overwrite startedAt - preserve original)
+          await tx.workflowStep.update({
+            where: { id: regStep.id },
             data: {
-              status: 'IN_PROGRESS',
-              startedAt: now,
-              slaDeadline: ppkpSlaDeadline,
+              status: 'COMPLETED',
+              completedAt: now,
+              comments: `No. Fail: ${fileNumber} (didaftarkan oleh ${user.name})`,
             },
           });
-        }
 
-        await db.application.update({
-          where: { id },
-          data: {
-            status: 'PPKP_PROCESSING',
-            currentStep: 'PPKP_PROCESSING',
-            fileNumber,
-            updatedAt: now,
-          },
+          // Start PPKP processing
+          const ppkpStep = application.steps.find(s => s.step === 'PPKP_PROCESSING');
+          if (ppkpStep) {
+            const ppkpSlaDeadline = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
+            await tx.workflowStep.update({
+              where: { id: ppkpStep.id },
+              data: {
+                status: 'IN_PROGRESS',
+                startedAt: now,
+                slaDeadline: ppkpSlaDeadline,
+              },
+            });
+          }
+
+          // Update application status with file number
+          await tx.application.update({
+            where: { id },
+            data: {
+              status: 'PPKP_PROCESSING',
+              currentStep: 'PPKP_PROCESSING',
+              fileNumber,
+              updatedAt: now,
+            },
+          });
         });
         break;
       }
@@ -184,35 +209,37 @@ export async function POST(
         // PPKP completes processing, sends to PPL
         const ppkpStep = application.steps.find(s => s.step === 'PPKP_PROCESSING' && s.status !== 'COMPLETED');
         if (!ppkpStep) {
-          return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
+          return NextResponse.json({ error: 'Langkah pemprosesan PPKP tidak dijumpai atau sudah selesai. Sila muat semula halaman.' }, { status: 400 });
         }
 
-        await db.workflowStep.update({
-          where: { id: ppkpStep.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: now,
-            comments: comments || `Pemprosesan PPKP selesai oleh ${user.name}`,
-          },
-        });
-
-        // Start PPL review
-        const pplStep = application.steps.find(s => s.step === 'PPL_REVIEW');
-        const pplSlaDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-        if (pplStep) {
-          await db.workflowStep.update({
-            where: { id: pplStep.id },
+        await db.$transaction(async (tx) => {
+          await tx.workflowStep.update({
+            where: { id: ppkpStep.id },
             data: {
-              status: 'IN_PROGRESS',
-              startedAt: now,
-              slaDeadline: pplSlaDeadline,
+              status: 'COMPLETED',
+              completedAt: now,
+              comments: comments || `Pemprosesan PPKP selesai oleh ${user.name}`,
             },
           });
-        }
 
-        await db.application.update({
-          where: { id },
-          data: { status: 'PPL_REVIEW', currentStep: 'PPL_REVIEW', updatedAt: now },
+          // Start PPL review
+          const pplStep = application.steps.find(s => s.step === 'PPL_REVIEW');
+          if (pplStep) {
+            const pplSlaDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+            await tx.workflowStep.update({
+              where: { id: pplStep.id },
+              data: {
+                status: 'IN_PROGRESS',
+                startedAt: now,
+                slaDeadline: pplSlaDeadline,
+              },
+            });
+          }
+
+          await tx.application.update({
+            where: { id },
+            data: { status: 'PPL_REVIEW', currentStep: 'PPL_REVIEW', updatedAt: now },
+          });
         });
         break;
       }
@@ -221,33 +248,35 @@ export async function POST(
         // PPL completes review, sends to PLB
         const pplStep = application.steps.find(s => s.step === 'PPL_REVIEW' && s.status !== 'COMPLETED');
         if (!pplStep) {
-          return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
+          return NextResponse.json({ error: 'Langkah ulasan PPL tidak dijumpai atau sudah selesai. Sila muat semula halaman.' }, { status: 400 });
         }
 
-        await db.workflowStep.update({
-          where: { id: pplStep.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: now,
-            comments: comments || `Ulasan PPL diberikan oleh ${user.name}`,
-          },
-        });
-
-        // Start PLB decision
-        const plbStep = application.steps.find(s => s.step === 'PLB_DECISION');
-        if (plbStep) {
-          await db.workflowStep.update({
-            where: { id: plbStep.id },
+        await db.$transaction(async (tx) => {
+          await tx.workflowStep.update({
+            where: { id: pplStep.id },
             data: {
-              status: 'IN_PROGRESS',
-              startedAt: now,
+              status: 'COMPLETED',
+              completedAt: now,
+              comments: comments || `Ulasan PPL diberikan oleh ${user.name}`,
             },
           });
-        }
 
-        await db.application.update({
-          where: { id },
-          data: { status: 'PLB_DECISION', currentStep: 'PLB_DECISION', updatedAt: now },
+          // Start PLB decision
+          const plbStep = application.steps.find(s => s.step === 'PLB_DECISION');
+          if (plbStep) {
+            await tx.workflowStep.update({
+              where: { id: plbStep.id },
+              data: {
+                status: 'IN_PROGRESS',
+                startedAt: now,
+              },
+            });
+          }
+
+          await tx.application.update({
+            where: { id },
+            data: { status: 'PLB_DECISION', currentStep: 'PLB_DECISION', updatedAt: now },
+          });
         });
         break;
       }
@@ -260,29 +289,31 @@ export async function POST(
 
         const plbStep = application.steps.find(s => s.step === 'PLB_DECISION' && s.status !== 'COMPLETED');
         if (!plbStep) {
-          return NextResponse.json({ error: 'Langkah tidak sah' }, { status: 400 });
+          return NextResponse.json({ error: 'Langkah keputusan PLB tidak dijumpai atau sudah selesai. Sila muat semula halaman.' }, { status: 400 });
         }
 
         const isRejected = plbDecision === 'DITOLAK';
 
-        await db.workflowStep.update({
-          where: { id: plbStep.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: now,
-            comments: plbDecisionNotes || `Keputusan: ${plbDecision} (oleh ${user.name})`,
-          },
-        });
+        await db.$transaction(async (tx) => {
+          await tx.workflowStep.update({
+            where: { id: plbStep.id },
+            data: {
+              status: 'COMPLETED',
+              completedAt: now,
+              comments: plbDecisionNotes || `Keputusan: ${plbDecision} (oleh ${user.name})`,
+            },
+          });
 
-        await db.application.update({
-          where: { id },
-          data: {
-            status: isRejected ? 'REJECTED' : 'COMPLETED',
-            currentStep: 'PLB_DECISION',
-            plbDecision,
-            plbDecisionNotes: plbDecisionNotes || null,
-            updatedAt: now,
-          },
+          await tx.application.update({
+            where: { id },
+            data: {
+              status: isRejected ? 'REJECTED' : 'COMPLETED',
+              currentStep: 'PLB_DECISION',
+              plbDecision,
+              plbDecisionNotes: plbDecisionNotes || null,
+              updatedAt: now,
+            },
+          });
         });
         break;
       }
@@ -306,6 +337,6 @@ export async function POST(
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Action POST error:', error);
-    return NextResponse.json({ error: 'Failed to process action' }, { status: 500 });
+    return NextResponse.json({ error: 'Gagal memproses tindakan. Sila cuba lagi.' }, { status: 500 });
   }
 }

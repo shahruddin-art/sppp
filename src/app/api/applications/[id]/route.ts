@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { WORKFLOW_STEPS, APPLICATION_TYPES } from '@/lib/constants';
 import { requireAuth, canListApplications } from '@/lib/rbac';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/applications/[id] - Get application detail
 export async function GET(
   request: Request,

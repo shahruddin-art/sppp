@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSessionFromRequest, hashPassword } from '@/lib/auth';
+import { hashPassword, getSessionFromRequest } from '@/lib/auth';
+
+// Force dynamic rendering - never cache this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Helper to get admin session from request
+function getAdminSession(request: Request) {
+  const session = getSessionFromRequest(request);
+  if (!session || session.role !== 'ADMIN') return null;
+  return session;
+}
 
 // GET /api/admin/users - List all users (Admin only)
 export async function GET(request: Request) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 
@@ -36,8 +47,8 @@ export async function GET(request: Request) {
 // POST /api/admin/users - Create new user (Admin only)
 export async function POST(request: Request) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 
@@ -47,6 +58,13 @@ export async function POST(request: Request) {
     if (!username || !password || !name || !role) {
       return NextResponse.json(
         { error: 'Username, kata laluan, nama, dan peranan diperlukan' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Kata laluan mestilah sekurang-kurangnya 6 aksara' },
         { status: 400 }
       );
     }

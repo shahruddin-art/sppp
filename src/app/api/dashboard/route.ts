@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth, canViewDashboard } from '@/lib/rbac';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // ── Auth check ──

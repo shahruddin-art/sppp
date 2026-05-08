@@ -20,33 +20,34 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedSteps   WorkflowStep[]  @relation("StepAssignedUser")
-  ptApplications  Application[] @relation("PTAssigned")
-  ppkpApplications Application[] @relation("PPKPAssigned")
-  pplApplications Application[] @relation("PPLAssigned")
-  plbApplications Application[] @relation("PLBAssigned")
+  assignedSteps    WorkflowStep[]  @relation("StepAssignedUser")
+  ptApplications   Application[]  @relation("PTAssigned")
+  ppkpApplications Application[]  @relation("PPKPAssigned")
+  pplApplications  Application[]  @relation("PPLAssigned")
+  plbApplications  Application[]  @relation("PLBAssigned")
 }
 
 model Application {
-  id              String   @id @default(cuid())
-  referenceNo     String   @unique
-  applicantName   String
-  applicantIc     String
-  applicantPhone  String?
+  id               String   @id @default(cuid())
+  referenceNo      String   @unique
+  applicantName    String
+  applicantIc      String
+  applicantPhone   String?
   applicantAddress String?
-  applicationType String   // G1, G1_P, G2, G3, G7, G8, G9, G11, PAPAN_IKLAN, PERMIT_SEMENTARA
-  zone            String   // A, B, C, D, E
-  status          String   // PENDING_PT, PT_PROCESSING, PPKP_PROCESSING, PPL_REVIEW, PLB_DECISION, COMPLETED, REJECTED
-  fileNumber      String?
-  currentStep     String   // KAUNTER, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PLB_DECISION
-  ptStaffId       String?
-  ppkpStaffId     String?
-  pplStaffId      String?
-  plbStaffId      String?
-  plbDecision      String?  // SIMPAN_FAIL, JABATAN_KESIHATAN, JABATAN_PERANCANG_BANDAR
-  plbDecisionNotes String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  applicationType  String   // PERMOHONAN_BARU, TUKAR_NAMA_SYARIKAT, TAMBAH_KURANG_PREMIS, TAMBAH_TUKAR_AKTIVITI, PINDAH_MILIK_LESEN
+  businessType     String?  // Jenis perniagaan (for PERMOHONAN_BARU)
+  zone             String
+  status           String
+  fileNumber       String?
+  currentStep      String
+  ptStaffId        String?
+  ppkpStaffId      String?
+  pplStaffId       String?
+  plbStaffId       String?
+  plbDecision       String?
+  plbDecisionNotes  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   ptStaff    User?         @relation("PTAssigned", fields: [ptStaffId], references: [id])
   ppkpStaff  User?         @relation("PPKPAssigned", fields: [ppkpStaffId], references: [id])
@@ -56,18 +57,18 @@ model Application {
 }
 
 model WorkflowStep {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   applicationId String
-  step          String   // KAUNTER_RECEIPT, PT_FILE_OPENING, PT_FILE_REGISTRATION, PPKP_PROCESSING, PPL_REVIEW, PLB_DECISION
-  status        String   // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
+  step          String
+  status        String
   assignedToId  String?
   startedAt     DateTime?
   completedAt   DateTime?
-  slaDays       Float    // SLA in days
+  slaDays       Float
   slaDeadline   DateTime?
   comments      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   assignedTo  User?       @relation("StepAssignedUser", fields: [assignedToId], references: [id])
@@ -75,9 +76,9 @@ model WorkflowStep {
 
 model KpiConfig {
   id          String   @id @default(cuid())
-  stepName    String   @unique // PT_FILE_OPENING, PPKP_PROCESSING, PPL_REVIEW
-  slaDays     Float    // SLA in days
-  warningDays Float    // Days before deadline to show warning
+  stepName    String   @unique
+  slaDays     Float
+  warningDays Float
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

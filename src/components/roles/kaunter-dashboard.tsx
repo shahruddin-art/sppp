@@ -34,7 +34,9 @@ import {
   ChevronRight,
   ClipboardList,
   ArrowRight,
+  CalendarDays,
 } from 'lucide-react';
+import DailyReceivedReport from '@/components/reports/daily-received-report';
 
 interface KaunterDashboardProps {
   user: {
@@ -614,6 +616,10 @@ export default function KaunterDashboard({ user, onSelectApp }: KaunterDashboard
             <ClipboardList className="h-4 w-4" />
             Senarai Permohonan
           </TabsTrigger>
+          <TabsTrigger value="laporan" className="gap-1.5">
+            <CalendarDays className="h-4 w-4" />
+            Laporan Harian
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="daftar">
@@ -622,6 +628,10 @@ export default function KaunterDashboard({ user, onSelectApp }: KaunterDashboard
 
         <TabsContent value="senarai">
           <SenaraiPermohonan user={user} onSelectApp={onSelectApp} />
+        </TabsContent>
+
+        <TabsContent value="laporan">
+          <DailyReceivedReport userRole={user.role} />
         </TabsContent>
       </Tabs>
     </div>

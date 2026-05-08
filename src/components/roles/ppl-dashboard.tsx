@@ -22,7 +22,9 @@ import {
   MessageSquare,
   RefreshCw,
   ClipboardList,
+  CalendarDays,
 } from 'lucide-react';
+import DailyReceivedReport from '@/components/reports/daily-received-report';
 import {
   formatStatus,
   getStatusColor,
@@ -244,6 +246,10 @@ export default function PPLDashboard({ user, onSelectApp }: PPLDashboardProps) {
             <ClipboardList className="h-4 w-4" />
             Senarai Permohonan
           </TabsTrigger>
+          <TabsTrigger value="laporan" className="gap-1.5">
+            <CalendarDays className="h-4 w-4" />
+            Laporan Harian
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ulasan">
@@ -429,6 +435,10 @@ export default function PPLDashboard({ user, onSelectApp }: PPLDashboardProps) {
 
         <TabsContent value="senarai">
           <SenaraiPermohonan onSelectApp={onSelectApp} />
+        </TabsContent>
+
+        <TabsContent value="laporan">
+          <DailyReceivedReport userRole={user.role} />
         </TabsContent>
       </Tabs>
     </div>

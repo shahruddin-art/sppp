@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { WORKFLOW_STEPS, APPLICATION_TYPES } from '@/lib/constants';
 import { requireAuth, canViewPerformance } from '@/lib/rbac';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // ── Auth check ──

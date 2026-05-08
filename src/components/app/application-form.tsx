@@ -30,6 +30,7 @@ export default function ApplicationForm() {
     applicantPhone: '',
     applicantAddress: '',
     applicationType: '',
+    businessType: '',
     zone: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +41,11 @@ export default function ApplicationForm() {
 
     if (!formData.applicantName || !formData.applicantIc || !formData.applicationType || !formData.zone) {
       toast.error('Sila lengkapkan semua ruangan yang diperlukan');
+      return;
+    }
+
+    if (formData.applicationType === 'PERMOHONAN_BARU' && !formData.businessType) {
+      toast.error('Jenis Perniagaan diperlukan untuk Permohonan Baru');
       return;
     }
 
@@ -54,6 +60,7 @@ export default function ApplicationForm() {
         applicantPhone: '',
         applicantAddress: '',
         applicationType: '',
+        businessType: '',
         zone: '',
       });
     } catch (error: any) {
@@ -147,7 +154,7 @@ export default function ApplicationForm() {
                   <Label htmlFor="applicationType">Jenis Permohonan *</Label>
                   <Select
                     value={formData.applicationType}
-                    onValueChange={(val) => setFormData({ ...formData, applicationType: val })}
+                    onValueChange={(val) => setFormData({ ...formData, applicationType: val, businessType: val !== 'PERMOHONAN_BARU' ? '' : formData.businessType })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis permohonan" />
@@ -179,6 +186,20 @@ export default function ApplicationForm() {
                   </Select>
                 </div>
               </div>
+
+              {/* Business Type - only for PERMOHONAN_BARU */}
+              {formData.applicationType === 'PERMOHONAN_BARU' && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="businessType">Jenis Perniagaan *</Label>
+                  <Input
+                    id="businessType"
+                    value={formData.businessType}
+                    onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                    placeholder="Cth: Restoran, Kedai runcit, Bidan, dll."
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             {/* Routing Preview */}

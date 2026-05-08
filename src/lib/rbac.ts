@@ -66,11 +66,6 @@ const CAN_VIEW_PERFORMANCE: Role[] = ['ADMIN', 'PLB', 'PPL_L', 'PPL_P'];
  */
 const CAN_VIEW_STAFF: Role[] = ['ADMIN', 'KAUNTER', 'PT', 'PPKP_L', 'PPKP_P', 'PPL_L', 'PPL_P', 'PLB'];
 
-/**
- * Which roles can access POST /api/seed
- */
-const CAN_SEED: Role[] = ['ADMIN'];
-
 // ─── Authorization Helpers ──────────────────────────────────────────────────
 
 /**
@@ -133,13 +128,6 @@ export function canViewPerformance(role: string): boolean {
  */
 export function canViewStaff(role: string): boolean {
   return CAN_VIEW_STAFF.includes(role as Role);
-}
-
-/**
- * Check if a role can seed the database.
- */
-export function canSeed(role: string): boolean {
-  return CAN_SEED.includes(role as Role);
 }
 
 // ─── Session & Auth Helpers ─────────────────────────────────────────────────

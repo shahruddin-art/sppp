@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { generateReferenceNo, getPPKPRole, getPPLRole, APPLICATION_TYPES, WORKFLOW_STEPS } from '@/lib/constants';
 import { requireAuth, canCreateApplication, canListApplications, getApplicationFilterForRole } from '@/lib/rbac';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/applications - List all applications with filters
 export async function GET(request: Request) {
   try {
@@ -31,10 +33,10 @@ export async function GET(request: Request) {
     if (type) where.applicationType = type;
     if (search) {
       where.OR = [
-        { applicantName: { contains: search } },
-        { referenceNo: { contains: search } },
-        { fileNumber: { contains: search } },
-        { applicantIc: { contains: search } },
+        { applicantName: { contains: search, mode: 'insensitive' } },
+        { referenceNo: { contains: search, mode: 'insensitive' } },
+        { fileNumber: { contains: search, mode: 'insensitive' } },
+        { applicantIc: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -96,11 +98,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { applicantName, applicantIc, applicantPhone, applicantAddress, applicationType, zone } = body;
+    const { applicantName, applicantIc, applicantPhone, applicantAddress, applicationType, businessType, zone } = body;
 
     // Validate required fields
     if (!applicantName || !applicantIc || !applicationType || !zone) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Validate businessType for PERMOHONAN_BARU
+    if (applicationType === 'PERMOHONAN_BARU' && !businessType) {
+      return NextResponse.json({ error: 'Jenis Perniagaan diperlukan untuk Permohonan Baru' }, { status: 400 });
     }
 
     const referenceNo = generateReferenceNo();
@@ -118,76 +125,82 @@ export async function POST(request: Request) {
     const now = new Date();
     const ptSlaDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-    const application = await db.application.create({
-      data: {
-        referenceNo,
-        applicantName,
-        applicantIc,
-        applicantPhone: applicantPhone || null,
-        applicantAddress: applicantAddress || null,
-        applicationType,
-        zone,
-        status: 'PENDING_PT',
-        currentStep: 'PT_FILE_OPENING',
-        ptStaffId: ptStaff?.id || null,
-        ppkpStaffId: ppkpStaff?.id || null,
-        pplStaffId: pplStaff?.id || null,
-        plbStaffId: plbStaff?.id || null,
-      },
-    });
+    // Use transaction for atomicity - application and steps must be created together
+    const application = await db.$transaction(async (tx) => {
+      const app = await tx.application.create({
+        data: {
+          referenceNo,
+          applicantName,
+          applicantIc,
+          applicantPhone: applicantPhone || null,
+          applicantAddress: applicantAddress || null,
+          applicationType,
+          businessType: businessType || null,
+          zone,
+          status: 'PENDING_PT',
+          currentStep: 'PT_FILE_OPENING',
+          ptStaffId: ptStaff?.id || null,
+          ppkpStaffId: ppkpStaff?.id || null,
+          pplStaffId: pplStaff?.id || null,
+          plbStaffId: plbStaff?.id || null,
+        },
+      });
 
-    // Create workflow steps — KAUNTER_RECEIPT uses the actual logged-in user
-    await db.workflowStep.createMany({
-      data: [
-        {
-          applicationId: application.id,
-          step: 'KAUNTER_RECEIPT',
-          status: 'COMPLETED',
-          assignedToId: kaunterStaffId,
-          startedAt: now,
-          completedAt: now,
-          slaDays: 0,
-          slaDeadline: now,
-          comments: `Permohonan diterima di kaunter oleh ${user.name}`,
-        },
-        {
-          applicationId: application.id,
-          step: 'PT_FILE_OPENING',
-          status: 'PENDING',
-          assignedToId: ptStaff?.id || null,
-          startedAt: now,
-          slaDays: 3,
-          slaDeadline: ptSlaDeadline,
-        },
-        {
-          applicationId: application.id,
-          step: 'PT_FILE_REGISTRATION',
-          status: 'PENDING',
-          assignedToId: ptStaff?.id || null,
-          slaDays: 0,
-        },
-        {
-          applicationId: application.id,
-          step: 'PPKP_PROCESSING',
-          status: 'PENDING',
-          assignedToId: ppkpStaff?.id || null,
-          slaDays: 4,
-        },
-        {
-          applicationId: application.id,
-          step: 'PPL_REVIEW',
-          status: 'PENDING',
-          assignedToId: pplStaff?.id || null,
-          slaDays: 3,
-        },
-        {
-          applicationId: application.id,
-          step: 'PLB_DECISION',
-          status: 'PENDING',
-          assignedToId: plbStaff?.id || null,
-          slaDays: 0,
-        },
-      ],
+      // Create workflow steps — KAUNTER_RECEIPT uses the actual logged-in user
+      await tx.workflowStep.createMany({
+        data: [
+          {
+            applicationId: app.id,
+            step: 'KAUNTER_RECEIPT',
+            status: 'COMPLETED',
+            assignedToId: kaunterStaffId,
+            startedAt: now,
+            completedAt: now,
+            slaDays: 0,
+            slaDeadline: now,
+            comments: `Permohonan diterima di kaunter oleh ${user.name}`,
+          },
+          {
+            applicationId: app.id,
+            step: 'PT_FILE_OPENING',
+            status: 'PENDING',
+            assignedToId: ptStaff?.id || null,
+            startedAt: now,
+            slaDays: 3,
+            slaDeadline: ptSlaDeadline,
+          },
+          {
+            applicationId: app.id,
+            step: 'PT_FILE_REGISTRATION',
+            status: 'PENDING',
+            assignedToId: ptStaff?.id || null,
+            slaDays: 0,
+          },
+          {
+            applicationId: app.id,
+            step: 'PPKP_PROCESSING',
+            status: 'PENDING',
+            assignedToId: ppkpStaff?.id || null,
+            slaDays: 4,
+          },
+          {
+            applicationId: app.id,
+            step: 'PPL_REVIEW',
+            status: 'PENDING',
+            assignedToId: pplStaff?.id || null,
+            slaDays: 3,
+          },
+          {
+            applicationId: app.id,
+            step: 'PLB_DECISION',
+            status: 'PENDING',
+            assignedToId: plbStaff?.id || null,
+            slaDays: 0,
+          },
+        ],
+      });
+
+      return app;
     });
 
     // Fetch with relations

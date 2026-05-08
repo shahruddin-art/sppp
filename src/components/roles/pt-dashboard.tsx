@@ -37,7 +37,9 @@ import {
   CircleAlert,
   CircleDot,
   Briefcase,
+  CalendarDays,
 } from 'lucide-react';
+import DailyReceivedReport from '@/components/reports/daily-received-report';
 import {
   formatStatus,
   getStatusColor,
@@ -666,6 +668,18 @@ export default function PTDashboard({ user, onSelectApp }: PTDashboardProps) {
             </div>
           </ScrollArea>
         )}
+      </section>
+
+      {/* ── Daily Report Section ──────────────────────────────────────────────── */}
+      <section>
+        <Separator className="my-4" />
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-sky-100">
+            <CalendarDays className="h-4 w-4 text-sky-600" />
+          </div>
+          <h3 className="text-base font-semibold">Laporan Penerimaan Harian</h3>
+        </div>
+        <DailyReceivedReport userRole={user.role} />
       </section>
 
       {/* ── Open File Dialog ──────────────────────────────────────────────── */}

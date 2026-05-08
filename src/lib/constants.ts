@@ -1,15 +1,10 @@
 // Application types and their routing to PPKP
 export const APPLICATION_TYPES = {
-  G1: { label: 'G1 - Fail Am', ppkpRoute: 'PPKP_L' },
-  G1_P: { label: 'G1/P - Permit Hiburan', ppkpRoute: 'PPKP_L' },
-  G2: { label: 'G2 - Pasar', ppkpRoute: 'PPKP_P' },
-  G3: { label: 'G3 - Penjaja/Kiosk', ppkpRoute: 'PPKP_P' },
-  G7: { label: 'G7 - Outdoor Cafe', ppkpRoute: 'PPKP_L' },
-  G8: { label: 'G8 - Makanan', ppkpRoute: 'PPKP_L' },
-  G9: { label: 'G9 - Komposit', ppkpRoute: 'PPKP_L' },
-  G11: { label: 'G11 - Enakmen Hotel', ppkpRoute: 'PPKP_L' },
-  PAPAN_IKLAN: { label: 'Papan Iklan', ppkpRoute: 'PPKP_L' },
-  PERMIT_SEMENTARA: { label: 'Permit Sementara', ppkpRoute: 'PPKP_P' },
+  PERMOHONAN_BARU: { label: 'Permohonan Baru', ppkpRoute: 'PPKP_L' },
+  TUKAR_NAMA_SYARIKAT: { label: 'Tukar Nama Syarikat', ppkpRoute: 'PPKP_L' },
+  TAMBAH_KURANG_PREMIS: { label: 'Tambah/Kurang Premis', ppkpRoute: 'PPKP_L' },
+  TAMBAH_TUKAR_AKTIVITI: { label: 'Tambah/Tukar Aktiviti', ppkpRoute: 'PPKP_P' },
+  PINDAH_MILIK_LESEN: { label: 'Pindah Milik Lesen', ppkpRoute: 'PPKP_L' },
 } as const;
 
 export type ApplicationTypeKey = keyof typeof APPLICATION_TYPES;

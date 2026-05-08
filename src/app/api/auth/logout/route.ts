@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   try {
     const response = NextResponse.json({ message: 'Berhasil log keluar' });
 
-    response.cookies.set('session', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-      path: '/',
-    });
+    // Clear cookie by setting Max-Age=0
+    const cookieStr = 'session=; Path=/; Max-Age=0; SameSite=Lax';
+    response.headers.set('Set-Cookie', cookieStr);
 
     return response;
   } catch (error) {

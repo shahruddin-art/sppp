@@ -14,9 +14,11 @@ export interface UserSession {
 
 interface AuthState {
   user: UserSession | null;
+  sessionToken: string | null;
   loading: boolean;
   initialized: boolean;
   setUser: (user: UserSession | null) => void;
+  setSessionToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   initialize: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
@@ -25,14 +27,35 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  sessionToken: null,
   loading: false,
   initialized: false,
 
   setUser: (user) => set({ user }),
+  setSessionToken: (token) => set({ sessionToken: token }),
   setLoading: (loading) => set({ loading }),
 
   initialize: async () => {
     try {
+      // Try to restore session from localStorage first
+      const savedToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      if (savedToken) {
+        set({ sessionToken: savedToken });
+        // Validate the token with the server
+        const res = await fetch('/api/auth/session', {
+          headers: { 'Authorization': `Bearer ${savedToken}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          set({ user: data.user || null, initialized: true });
+          return;
+        }
+        // Token invalid, clear it
+        localStorage.removeItem('sessionToken');
+        set({ sessionToken: null });
+      }
+
+      // Fallback: try cookie-based session
       const res = await fetch('/api/auth/session');
       if (res.ok) {
         const data = await res.json();
@@ -60,7 +83,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(data.error || 'Log masuk gagal');
       }
 
-      set({ user: data.user, loading: false });
+      // Store session token from response
+      if (data.token) {
+        set({ sessionToken: data.token, user: data.user, loading: false });
+        localStorage.setItem('sessionToken', data.token);
+      } else {
+        set({ user: data.user, loading: false });
+      }
     } catch (error: any) {
       set({ loading: false });
       throw error;
@@ -71,7 +100,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
-      set({ user: null });
+      set({ user: null, sessionToken: null });
+      localStorage.removeItem('sessionToken');
     }
   },
 }));
+
+/**
+ * Get the current session token for API requests
+ */
+export function getSessionToken(): string | null {
+  // Try zustand store first
+  const storeToken = useAuthStore.getState().sessionToken;
+  if (storeToken) return storeToken;
+  // Fallback to localStorage
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('sessionToken');
+  }
+  return null;
+}

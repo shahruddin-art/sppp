@@ -100,18 +100,6 @@ export default function LoginForm() {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6 rounded-lg bg-muted/50 border p-4">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Akaun Demo:</p>
-              <div className="grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
-                <div><span className="font-medium text-foreground">Admin:</span> admin / admin123</div>
-                <div><span className="font-medium text-foreground">Kaunter:</span> siti / siti123</div>
-                <div><span className="font-medium text-foreground">PT:</span> lim / lim123</div>
-                <div><span className="font-medium text-foreground">PPKP(L):</span> cheah / cheah123</div>
-                <div><span className="font-medium text-foreground">PPL(L):</span> tee / tee123</div>
-                <div><span className="font-medium text-foreground">PLB:</span> ismail / ismail123</div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 

@@ -17,44 +17,57 @@ echo "=========================================="
 echo ""
 
 # Step 1: Install dependencies
-echo "[1/5] Installing dependencies..."
+echo "[1/6] Installing dependencies..."
 npm install
 echo "✅ Dependencies installed"
 
-# Step 2: Generate Prisma client
+# Step 2: Set up environment file
 echo ""
-echo "[2/5] Generating Prisma client..."
+echo "[2/6] Setting up environment..."
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "✅ Created .env from .env.example"
+  echo "⚠️  Edit .env to set your DATABASE_URL and JWT_SECRET"
+else
+  echo "✅ .env already exists"
+fi
+
+# Step 3: Generate Prisma client
+echo ""
+echo "[3/6] Generating Prisma client..."
 npx prisma generate
 echo "✅ Prisma client generated"
 
-# Step 3: Database setup (SQLite - no server needed)
+# Step 4: Database setup
 echo ""
-echo "[3/5] Database setup (SQLite)..."
-mkdir -p db
-npx prisma db push
-echo "✅ Database schema pushed"
+echo "[4/6] Database setup..."
+echo "Make sure PostgreSQL is running and DATABASE_URL in .env is correct."
+read -p "Push schema to database now? (y/n): " push_db
+if [ "$push_db" = "y" ]; then
+  npx prisma db push
+  echo "✅ Database schema pushed"
+else
+  echo "⏭️  Skipped. Run 'npx prisma db push' later."
+fi
 
-# Step 4: Seed database
+# Step 5: Seed database
 echo ""
-echo "[4/5] Seeding database..."
+echo "[5/6] Seeding database..."
 read -p "Seed database with default admin user? (y/n): " seed_db
 if [ "$seed_db" = "y" ]; then
-  npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+  npm run db:seed
   echo "✅ Database seeded (admin/admin123)"
 else
   echo "⏭️  Skipped. Run 'npm run db:seed' later."
 fi
 
-# Step 5: Ready
+# Step 6: Start dev server
 echo ""
-echo "[5/5] Ready to start!"
+echo "[6/6] Ready to start!"
 echo ""
 echo "=========================================="
 echo "  Setup Complete!"
 echo "=========================================="
-echo ""
-echo "Database: SQLite (file: ./db/custom.db)"
-echo "No external database server required!"
 echo ""
 echo "To start the development server:"
 echo "  npm run dev"
@@ -62,6 +75,15 @@ echo ""
 echo "To build for production:"
 echo "  npm run build"
 echo "  npm run start"
+echo ""
+echo "To deploy with PM2:"
+echo "  npm run build"
+echo "  pm2 start ecosystem.config.js"
+echo ""
+echo "To deploy to Google Cloud:"
+echo "  Edit deploy-gcloud.sh with your GCP settings"
+echo "  ./deploy-gcloud.sh setup"
+echo "  ./deploy-gcloud.sh deploy"
 echo ""
 echo "Default login: admin / admin123"
 echo "⚠️  Change the password after first login!"

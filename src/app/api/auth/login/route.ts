@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyPassword, createSessionToken } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -50,8 +52,15 @@ export async function POST(request: Request) {
       zone: user.zone,
     });
 
-    // Set httpOnly cookie and return user info
+    // Set cookie - use Secure flag in production (HTTPS)
+    const maxAge = 60 * 60 * 24; // 24 hours
+    const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
+    const isProduction = process.env.NODE_ENV === 'production';
+    const secureFlag = isProduction ? '; Secure' : '';
+    const cookieStr = `session=${token}; Path=/; Expires=${expires}; Max-Age=${maxAge}; SameSite=Lax${secureFlag}`;
+
     const response = NextResponse.json({
+      token,  // Send token in response body for client-side storage
       user: {
         id: user.id,
         username: user.username,
@@ -63,14 +72,9 @@ export async function POST(request: Request) {
       },
     });
 
-    response.cookies.set('session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: '/',
-    });
+    response.headers.set('Set-Cookie', cookieStr);
 
+    console.log('[Login] Session token set for user:', user.username, 'role:', user.role);
     return response;
   } catch (error) {
     console.error('Login error:', error);

@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSessionFromRequest, hashPassword } from '@/lib/auth';
+import { verifySessionToken, hashPassword, getSessionFromRequest } from '@/lib/auth';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Helper to get admin session from request
+function getAdminSession(request: Request) {
+  const session = getSessionFromRequest(request);
+  if (!session || session.role !== 'ADMIN') return null;
+  return session;
+}
 
 // GET /api/admin/users/[id] - Get single user detail (Admin only)
 export async function GET(
@@ -8,8 +19,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 
@@ -47,8 +58,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 
@@ -68,7 +79,15 @@ export async function PUT(
     if (email !== undefined) updateData.email = email || null;
     if (phone !== undefined) updateData.phone = phone || null;
     if (isActive !== undefined) updateData.isActive = isActive;
-    if (password) updateData.password = hashPassword(password);
+    if (password) {
+      if (password.length < 6) {
+        return NextResponse.json(
+          { error: 'Kata laluan mestilah sekurang-kurangnya 6 aksara' },
+          { status: 400 }
+        );
+      }
+      updateData.password = hashPassword(password);
+    }
 
     const user = await db.user.update({
       where: { id },
@@ -101,8 +120,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = getSessionFromRequest(request);
-    if (!session || session.role !== 'ADMIN') {
+    const session = getAdminSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Akan ditolak' }, { status: 403 });
     }
 
@@ -116,7 +135,7 @@ export async function DELETE(
     }
 
     // Prevent deleting own account
-    if (permanent && existing.id === session.userId) {
+    if (permanent && existing.id === session.id) {
       return NextResponse.json({ error: 'Anda tidak boleh memadam akaun sendiri' }, { status: 400 });
     }
 

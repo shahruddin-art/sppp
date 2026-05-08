@@ -16,8 +16,8 @@ import {
   FileText,
   LogOut,
   Loader2,
-  Database,
   ChevronDown,
+  KeyRound,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,8 +26,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { postData } from '@/hooks/use-fetch';
 import { toast } from 'sonner';
+import ChangePasswordDialog from '@/components/auth/change-password-dialog';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Pentadbir',
@@ -65,20 +65,11 @@ const ROLE_ICONS: Record<string, string> = {
 export default function HomePage() {
   const { user, initialized, initialize, logout } = useAuthStore();
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
-
-  const handleSeed = async () => {
-    if (!confirm('Ini akan memadam semua data sedia ada dan menggantikan dengan data contoh. Teruskan?')) return;
-    try {
-      await postData('/api/seed?force=true', {});
-      toast.success('Data contoh berjaya dimuatkan! Sila log masuk semula.');
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal memuatkan data contoh');
-    }
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -142,7 +133,7 @@ export default function HomePage() {
         <footer className="mt-auto border-t bg-white py-3">
           <div className="max-w-7xl mx-auto px-4">
             <p className="text-xs text-muted-foreground text-center">
-              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()} | Version Build 5/5/2026 8:00am
+              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()}
             </p>
           </div>
         </footer>
@@ -197,19 +188,6 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Seed button for admin */}
-              {user.role === 'ADMIN' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSeed}
-                  className="gap-2"
-                >
-                  <Database className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Data Contoh</span>
-                </Button>
-              )}
-
               {/* User menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -241,6 +219,11 @@ export default function HomePage() {
                     )}
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowChangePassword(true)}>
+                    <KeyRound className="h-4 w-4 mr-2" />
+                    Tukar Kata Laluan
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                     <LogOut className="h-4 w-4 mr-2" />
                     Log Keluar
@@ -269,12 +252,18 @@ export default function HomePage() {
         {renderDashboard()}
       </main>
 
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={showChangePassword}
+        onOpenChange={setShowChangePassword}
+      />
+
       {/* Footer */}
       <footer className="mt-auto border-t bg-white py-3">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()} | Version Build 5/5/2026 8:00am
+              Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()}
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
               <span>SLA: PT (3 hari)</span><span>•</span><span>PPKP (4 hari)</span><span>•</span><span>PPL (3 hari)</span>

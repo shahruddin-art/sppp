@@ -1,11 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { createHash } from 'crypto';
+import { hashPassword } from '../src/lib/auth';
 
 const prisma = new PrismaClient();
-
-function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
-}
 
 async function main() {
   console.log('🌱 Seeding database...');
