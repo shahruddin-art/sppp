@@ -59,7 +59,7 @@ function generateStickerHTML(app: Application): string {
       </colgroup>
       <tr>
         <td colspan="2" style="padding:0; border:1px solid #000;">
-          <table style="width:100%; border-collapse:collapse;">
+          <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
             <tr>
               <td class="file-number-small">${fileNum}</td>
               <td class="file-number-small">${fileNum}</td>
@@ -68,7 +68,7 @@ function generateStickerHTML(app: Application): string {
         </td>
       </tr>
       <tr>
-        <td colspan="2" class="file-number-large">${fileNum}</td>
+        <td colspan="2" class="file-number-large" style="border-bottom:2px solid #000;">${fileNum}</td>
       </tr>
       <tr>
         <td class="label">NO. KOMPOSIT</td>
@@ -141,6 +141,7 @@ export default function FileSticker({ application }: FileStickerProps) {
       font-size: 12pt;
       text-transform: uppercase;
       height: 100%;
+      border: 2px solid #000;
     }
     .sticker-table td {
       border: 1px solid #000;
@@ -152,6 +153,7 @@ export default function FileSticker({ application }: FileStickerProps) {
     .sticker-table .label {
       font-weight: bold;
       white-space: nowrap;
+      border-right: 2px solid #000;
     }
     .sticker-table .value {
     }
@@ -162,8 +164,12 @@ export default function FileSticker({ application }: FileStickerProps) {
       text-align: center;
       text-transform: uppercase;
       border: 1px solid #000;
+      border-right: 2px solid #000;
       padding: 2px 4px;
       width: 50%;
+    }
+    .sticker-table .file-number-small:last-child {
+      border-right: 1px solid #000;
     }
     .sticker-table .file-number-large {
       font-family: Arial, sans-serif;
