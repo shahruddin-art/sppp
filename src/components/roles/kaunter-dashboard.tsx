@@ -103,6 +103,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
     applicantPhone: '',
     applicantAddress: '',
     applicationType: '',
+    businessType: '',
     zone: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -119,6 +120,11 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
       return;
     }
 
+    if (formData.applicationType === 'PERMOHONAN_BARU' && !formData.businessType) {
+      toast.error('Jenis Perniagaan diperlukan untuk Permohonan Baru');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await postData('/api/applications', formData);
@@ -130,6 +136,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
         applicantPhone: '',
         applicantAddress: '',
         applicationType: '',
+        businessType: '',
         zone: '',
       });
     } catch (error: any) {
@@ -231,7 +238,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                   <Label htmlFor="applicationType">Jenis Permohonan *</Label>
                   <Select
                     value={formData.applicationType}
-                    onValueChange={(val) => setFormData({ ...formData, applicationType: val })}
+                    onValueChange={(val) => setFormData({ ...formData, applicationType: val, businessType: val !== 'PERMOHONAN_BARU' ? '' : formData.businessType })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis permohonan" />
@@ -265,6 +272,20 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                   </Select>
                 </div>
               </div>
+
+              {/* Business Type - only for PERMOHONAN_BARU */}
+              {formData.applicationType === 'PERMOHONAN_BARU' && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="businessType">Jenis Perniagaan *</Label>
+                  <Input
+                    id="businessType"
+                    value={formData.businessType}
+                    onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                    placeholder="Cth: Restoran, Kedai runcit, Bidan, dll."
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             {/* Routing Preview */}

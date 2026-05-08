@@ -73,6 +73,7 @@ interface Application {
   applicantPhone: string | null;
   applicantAddress: string | null;
   applicationType: string;
+  businessType: string | null;
   zone: string;
   status: string;
   fileNumber: string | null;
@@ -227,6 +228,12 @@ export default function ApplicationDetail({ applicationId, onBack, user }: Appli
                 <span className="text-muted-foreground shrink-0">Jenis</span>
                 <Badge variant="outline" className="text-[10px] max-w-[140px] truncate">{app.applicationTypeLabel}</Badge>
               </div>
+              {app.businessType && (
+                <div className="flex justify-between items-center min-w-0 gap-2">
+                  <span className="text-muted-foreground shrink-0">Jenis Perniagaan</span>
+                  <span className="font-medium text-sm truncate">{app.businessType}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Zon</span>
                 <Badge variant="outline" className={`text-[10px] ${getZoneColor(app.zone)}`}>Zon {app.zone}</Badge>
