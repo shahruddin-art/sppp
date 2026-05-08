@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
     if (!canCreateApplication(user.role)) {
       return NextResponse.json(
-        { error: 'Hanya pengguna Kaunter boleh mendaftar permohonan baharu.' },
+        { error: 'Hanya pengguna Kaunter atau Pentadbir boleh mendaftar permohonan baharu.' },
         { status: 403 }
       );
     }
@@ -102,7 +102,12 @@ export async function POST(request: Request) {
 
     // Validate required fields
     if (!applicantName || !applicantIc || !applicationType || !zone) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      const missing = [];
+      if (!applicantName) missing.push('Nama Pemohon');
+      if (!applicantIc) missing.push('No. Kad Pengenalan/ROC');
+      if (!applicationType) missing.push('Jenis Permohonan');
+      if (!zone) missing.push('Zon');
+      return NextResponse.json({ error: `Ruangan diperlukan: ${missing.join(', ')}` }, { status: 400 });
     }
 
     // Validate businessType for PERMOHONAN_BARU
@@ -160,7 +165,7 @@ export async function POST(request: Request) {
             completedAt: now,
             slaDays: 0,
             slaDeadline: now,
-            comments: `Permohonan diterima di kaunter oleh ${user.name}`,
+            comments: `Permohonan diterima di kaunter oleh ${user.name} (${user.role})`,
           },
           {
             applicationId: app.id,
@@ -220,6 +225,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     console.error('Application POST error:', error);
-    return NextResponse.json({ error: 'Failed to create application' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create application';
+    return NextResponse.json({ error: `Gagal mendaftar permohonan: ${message}` }, { status: 500 });
   }
 }

@@ -43,7 +43,7 @@ const ACTION_STATUS_MAP: Record<WorkflowAction, string[]> = {
 /**
  * Which roles can access POST /api/applications (create new application)
  */
-const CAN_CREATE_APPLICATION: Role[] = ['KAUNTER'];
+const CAN_CREATE_APPLICATION: Role[] = ['KAUNTER', 'ADMIN'];
 
 /**
  * Which roles can access GET /api/applications (list applications)

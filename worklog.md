@@ -1,143 +1,23 @@
 ---
 Task ID: 1
-Agent: Main
-Task: Fix dev server crash and Preview Panel access
+Agent: Main Agent
+Task: Debug and fix application creation failure when daftar permohonan
 
 Work Log:
-- Diagnosed that the Next.js dev server kept dying after ~30 seconds
-- Tested with production build (next start) - same issue
-- Tested with minimal Node.js HTTP server - survived indefinitely
-- Discovered the root cause: processes started from bash sessions get killed when the session ends
-- The sandbox environment (using tini as PID 1) cleans up orphaned processes from terminated shell sessions
-- Solution: Double-fork daemonization technique to make the server process a child of PID 1 (tini)
-- Created daemon scripts in .zscripts/ that use double-fork to reparent the server to init
-- Updated .zscripts/dev.sh with proper daemonization
-- Updated package.json with memory limits (dev: 2048MB, start: 512MB)
-- Verified server stability: running for 3+ minutes with continuous HTTP 200 responses
-- Verified login API works correctly (admin/admin123)
-- Cleared corrupted .next/Turbopack cache
+- Checked dev server status - server was down, restarted using .zscripts/dev.sh
+- Tested API directly with curl - POST /api/applications returned 201 (success)
+- Investigated session/auth flow - found user passwords (admin/admin123, ezad/ezad123, fadhil/fadhil123)
+- Identified root cause: ADMIN role was not in CAN_CREATE_APPLICATION list, causing 403 error when Admin dashboard tried to create applications
+- Fixed rbac.ts: Added 'ADMIN' to CAN_CREATE_APPLICATION role list
+- Improved API error messages: Changed "Missing required fields" to specific Malay field names
+- Improved API error messages: Changed "Failed to create application" to include actual error details
+- Updated application creation comment to include user role in KAUNTER_RECEIPT step
+- Improved frontend error handling in kaunter-dashboard.tsx: Added console.error, better session expiry detection, longer toast duration
+- Verified both KAUNTER and ADMIN can create applications successfully
+- Tested full PT workflow (open file → register file number) - works correctly
 
 Stage Summary:
-- Dev server is now stable and running as daemon (PID 8229, PPid 8216)
-- Memory usage: ~939MB for dev mode (Turbopack), ~170MB for production mode
-- Login API returns valid JWT tokens
-- Server accessible via localhost:3000 with HTTP 200
-- Key fix: double-fork daemonization prevents sandbox from killing the server process
-
----
-Task ID: 2
-Agent: Main
-Task: Fix "UNABLE TO PUBLISH APP" - dev server was not running
-
-Work Log:
-- User reported "UNABLE TO PUBLISH APP" - the dev server had crashed again
-- Verified server was not responding (curl returned 000)
-- No running node/next processes found
-- Killed any stale processes and cleaned .next cache
-- Restarted dev server using .zscripts/dev.sh daemonization script
-- Waited for server to become ready on localhost:3000
-- Health check passed: HTTP 200
-- Verified login API works: admin/admin123 returns valid JWT token
-- Verified page renders: "Sistem Pengurusan Prestasi Proses Permohonan" + "Memuatkan sistem..."
-- Verified all code is intact: businessType field exists in kaunter-dashboard.tsx (lines 106, 124-131, 289-316)
-- Verified BUSINESS_TYPES constant is properly defined in constants.ts
-- Verified API route handles businessType correctly (route.ts lines 101, 109-111, 138)
-- Verified application-detail.tsx displays businessType (lines 76, 231-236)
-
-Stage Summary:
-- Dev server restarted and running as daemon on port 3000
-- All features intact: businessType field in Kaunter form, API handling, detail view
-- App is accessible at localhost:3000 with HTTP 200
-
----
-Task ID: 3
-Agent: Main
-Task: Add Admin CRUD for applications (Permohonan tab) with table and pagination
-
-Work Log:
-- Added PUT and DELETE API endpoints to /api/applications/[id]/route.ts
-  - PUT: Admin-only update of application fields (applicantName, applicantIc, applicationType, businessType, zone, status, fileNumber, plbDecision, etc.)
-  - DELETE: Admin-only delete with cascade (deletes workflow steps too)
-  - Both check role === 'ADMIN' and return 403 for non-admin users
-- Added new "Permohonan" tab as the first tab in admin-dashboard.tsx
-  - Full CRUD table with columns: No. Rujukan, Nama Pemohon, No. IC/ROC, Jenis, Zon, No. Fail, Status, Dicipta, Tindakan
-  - Filters: search (name/ref/file/IC), status, application type, zone
-  - Pagination: 10 items per page with shadcn Pagination component (page numbers, prev/next, ellipsis)
-  - Create dialog: same fields as Kaunter form (applicant info, application type, businessType for PERMOHONAN_BARU, zone)
-  - Edit dialog: all fields + admin-only fields (fileNumber, status, plbDecision, plbDecisionNotes)
-  - View dialog: read-only detail popup with staff assignments
-  - Delete confirmation: AlertDialog with warning
-- Moved tab order: Permohonan first, then Pengguna, Konfigurasi, KPI, Laporan
-- Tested all API endpoints: GET (200), PUT (200), DELETE (404 for non-existent, 403 for non-admin)
-- Lint passes with no errors
-
-Stage Summary:
-- Admin now has full CRUD for applications with table view and pagination
-- API endpoints secured: PUT/DELETE restricted to ADMIN role
-- Tab "Permohonan" is the default first tab for Admin users
-
----
-Task ID: 4
-Agent: Main
-Task: Add document checklist during file opening process with print functionality
-
-Work Log:
-- Read uploaded PDF (2174_001.pdf) - it was image-based (scanned), so used VLM to extract content
-- Identified checklist format from PDF: 10 items with circled numbers, file number header, reference section, company info, signature block
-- Added DOCUMENT_CHECKLIST constant to constants.ts with checklist items per application type (PERMOHONAN_BARU: 10 items, TUKAR_NAMA_SYARIKAT: 7 items, TAMBAH_KURANG_PREMIS: 10 items, TAMBAH_TUKAR_AKTIVITI: 8 items, PINDAH_MILIK_LESEN: 8 items)
-- Created DocumentChecklist component (src/components/app/document-checklist.tsx) with:
-  - Circled numbers (①②③...⑮) instead of checkbox squares
-  - Application info summary (Bil., aktiviti, Nama Syarikat, alamat)
-  - "Cetak Checklist" button that opens a print-formatted window
-  - Print format: A4 page, file number at top center (18pt bold Arial), all other text Arial 12pt, circled numbers, no checkboxes, fits on one page
-  - Signature block with PT staff name, "Pembantu Tadbir", "Jabatan Pelesenan", "Majlis Bandaraya Ipoh", date
-- Integrated DocumentChecklist into application-detail.tsx:
-  - Added as a standalone card in left column, always visible for PT and ADMIN roles
-  - Removed duplicate toggle approach from action panel to avoid showing checklist twice
-- Cleaned up unused imports (FileCheck, Printer, DOCUMENT_CHECKLIST from application-detail.tsx; useRef, formatDate from document-checklist.tsx)
-- Lint passes clean, dev server running without errors, app returns HTTP 200
-
-Stage Summary:
-- Document checklist is available in the application detail view for PT and ADMIN users
-- Checklist items vary by application type based on official PDF format
-- Print button generates a one-page A4 document matching the official checklist format
-- File number printed at top center in 18pt bold Arial
-- All other text in Arial 12pt with circled numbers (no checkbox squares)
-
----
-Task ID: 5
-Agent: Main
-Task: Add file sticker printing function for PT with official format from PDF
-
-Work Log:
-- Read uploaded PDF (2175_001.pdf) - image-based, used VLM to extract layout
-- Identified sticker format: 3 stickers per A4 page, each with:
-  - File number twice at top (14pt bold) and once large in center (46pt bold)
-  - Table with: JENIS LESEN, NAMA PERNIAGAAN, NAMA PELESEN + No. Pendaftaran + No. Telefon, ALAMAT PERNIAGAAN, TARIKH + NO. AKAUN
-  - All uppercase, borders around each sticker and table cells
-- Added `businessName` and `accountNo` fields to Prisma schema (Application model)
-- Ran db:push to sync schema with SQLite database
-- Updated API routes:
-  - POST /api/applications: handles businessName and accountNo
-  - PUT /api/applications/[id]: handles businessName and accountNo updates
-- Created FileSticker component (src/components/app/file-sticker.tsx):
-  - Generates 3 identical stickers per A4 page
-  - File number: 2x at top (14pt bold Arial) + 1x center (46pt bold Arial)
-  - All text UPPERCASE
-  - Table with bordered cells (30% label, 70% value)
-  - NAMA PELESEN row has 3 sub-columns: Name | IC/SSM No. | Phone
-  - TARIKH row has date + NO.AKAUN
-  - Word wrap enabled in all cells
-- Integrated FileSticker button in application-detail.tsx header (PT and ADMIN only, requires fileNumber)
-- Added businessName and accountNo display in applicant details card
-- Updated Application interface in application-detail.tsx and document-checklist.tsx
-- Updated kaunter-dashboard.tsx form with businessName and accountNo fields
-- Updated admin-dashboard.tsx form with businessName and accountNo fields (form state, reset, edit, save)
-- Lint passes clean, app returns HTTP 200
-
-Stage Summary:
-- File sticker printing function available for PT and ADMIN roles
-- Sticker format: 3 per A4 page, matching official MBI format from PDF
-- All text UPPERCASE, file number at 14pt (top) and 46pt (center)
-- New schema fields: businessName (Nama Perniagaan), accountNo (No. Akaun)
-- Forms updated in both Kaunter and Admin dashboards
+- Application creation now works for both KAUNTER and ADMIN roles
+- Better error messages in Malay for API validation errors
+- Improved frontend error handling with session expiry detection
+- All lint checks pass

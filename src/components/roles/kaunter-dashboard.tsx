@@ -156,7 +156,13 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
         zone: '',
       });
     } catch (error: any) {
-      toast.error(error.message || 'Gagal mendaftarkan permohonan');
+      console.error('Daftar permohonan error:', error);
+      const errMsg = error?.message || 'Gagal mendaftarkan permohonan';
+      if (errMsg.includes('Sesi telah tamat') || errMsg.includes('tidak sah')) {
+        toast.error('Sesi telah tamat. Sila log masuk semula.', { duration: 5000 });
+      } else {
+        toast.error(errMsg, { duration: 5000 });
+      }
     } finally {
       setSubmitting(false);
     }
