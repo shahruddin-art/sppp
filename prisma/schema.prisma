@@ -94,3 +94,14 @@ model BusinessType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model ApplicationType {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  label      String
+  ppkpRoute  String   @default("PPKP_L")  // PPKP_L or PPKP_P
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

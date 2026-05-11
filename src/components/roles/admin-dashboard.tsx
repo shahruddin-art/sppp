@@ -81,6 +81,7 @@ import { getSessionToken } from '@/lib/auth-store';
 import { toast } from 'sonner';
 import { APPLICATION_TYPES, ZONES, STAFF_ROLES, APPLICATION_STATUSES, PLB_DECISIONS } from '@/lib/constants';
 import { useBusinessTypes } from '@/hooks/use-business-types';
+import { useApplicationTypes } from '@/hooks/use-application-types';
 import {
   formatStaffRole,
   getZoneColor,
@@ -157,7 +158,7 @@ interface AdminDashboardProps {
   };
 }
 
-type TabKey = 'permohonan' | 'pengguna' | 'konfigurasi' | 'jenisPerniagaan' | 'kpi' | 'laporan';
+type TabKey = 'permohonan' | 'pengguna' | 'konfigurasi' | 'jenisPerniagaan' | 'jenisPermohonan' | 'kpi' | 'laporan';
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
@@ -166,6 +167,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'pengguna', label: 'Pengguna', icon: <Users className="h-4 w-4" /> },
   { key: 'konfigurasi', label: 'Konfigurasi', icon: <Settings className="h-4 w-4" /> },
   { key: 'jenisPerniagaan', label: 'Jenis Perniagaan', icon: <Store className="h-4 w-4" /> },
+  { key: 'jenisPermohonan', label: 'Jenis Permohonan', icon: <ClipboardList className="h-4 w-4" /> },
   { key: 'kpi', label: 'KPI', icon: <Target className="h-4 w-4" /> },
   { key: 'laporan', label: 'Laporan', icon: <BarChart3 className="h-4 w-4" /> },
 ];
@@ -218,6 +220,7 @@ export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
       {activeTab === 'pengguna' && <PenggunaTab />}
       {activeTab === 'konfigurasi' && <KonfigurasiTab />}
       {activeTab === 'jenisPerniagaan' && <JenisPerniagaanTab />}
+      {activeTab === 'jenisPermohonan' && <JenisPermohonanTab />}
       {activeTab === 'kpi' && <KpiTab />}
       {activeTab === 'laporan' && <LaporanTab />}
     </div>
@@ -230,6 +233,7 @@ export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
 
 function PermohonanTab() {
   const { businessTypes } = useBusinessTypes();
+  const { applicationTypes } = useApplicationTypes();
   // Server-side pagination state
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -518,9 +522,9 @@ function PermohonanTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Semua Jenis</SelectItem>
-                  {Object.entries(APPLICATION_TYPES).map(([key, val]) => (
-                    <SelectItem key={key} value={key}>
-                      {val.label}
+                  {applicationTypes.map((at) => (
+                    <SelectItem key={at.code} value={at.code}>
+                      {at.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -853,9 +857,9 @@ function PermohonanTab() {
                       <SelectValue placeholder="Pilih jenis" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(APPLICATION_TYPES).map(([key, val]) => (
-                        <SelectItem key={key} value={key}>
-                          {val.label}
+                      {applicationTypes.map((at) => (
+                        <SelectItem key={at.code} value={at.code}>
+                          {at.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -886,7 +890,7 @@ function PermohonanTab() {
                     <div className="text-sm">
                       <p className="font-medium text-amber-800">Perubahan Jenis Permohonan</p>
                       <p className="text-amber-700 text-xs mt-1">
-                        Anda menukar jenis daripada <strong>{(APPLICATION_TYPES as any)[originalApplicationType]?.label || originalApplicationType}</strong> kepada <strong>{(APPLICATION_TYPES as any)[form.applicationType]?.label || form.applicationType}</strong>.
+                        Anda menukar jenis daripada <strong>{applicationTypes.find((at) => at.code === originalApplicationType)?.label || originalApplicationType}</strong> kepada <strong>{applicationTypes.find((at) => at.code === form.applicationType)?.label || form.applicationType}</strong>.
                         PPKP dan PPL yang bertugas akan dikemas kini mengikut jenis baharu.
                       </p>
                     </div>
@@ -1524,14 +1528,16 @@ function KonfigurasiTab() {
     ptByZone[z] = (users || []).filter((u) => u.role === 'PT' && u.zone === z && u.isActive);
   });
 
-  // Group application types by PPKP route
-  const ppkpLTypes = Object.entries(APPLICATION_TYPES)
-    .filter(([, val]) => val.ppkpRoute === 'PPKP_L')
-    .map(([key, val]) => ({ key, label: val.label }));
+  // Group application types by PPKP route (use dynamic data)
+  const { applicationTypes: configAppTypes } = useApplicationTypes();
 
-  const ppkpPTypes = Object.entries(APPLICATION_TYPES)
-    .filter(([, val]) => val.ppkpRoute === 'PPKP_P')
-    .map(([key, val]) => ({ key, label: val.label }));
+  const ppkpLTypes = configAppTypes
+    .filter((at) => at.ppkpRoute === 'PPKP_L')
+    .map((at) => ({ key: at.code, label: at.label }));
+
+  const ppkpPTypes = configAppTypes
+    .filter((at) => at.ppkpRoute === 'PPKP_P')
+    .map((at) => ({ key: at.code, label: at.label }));
 
   return (
     <div className="space-y-6">
@@ -2046,6 +2052,488 @@ function JenisPerniagaanTab() {
               Adakah anda pasti ingin memadam <strong>{deleteBt?.name}</strong>?
               {deleteBt?.isActive
                 ? ' Jika jenis perniagaan ini sedang digunakan oleh permohonan, ia akan dinyahaktifkan sahaja dan tidak akan dipadam.'
+                : ' Tindakan ini tidak boleh dibatalkan.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Padam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 2.6: JENIS PERMOHONAN (Application Type Management)
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface ApplicationTypeRow {
+  id: string;
+  code: string;
+  label: string;
+  ppkpRoute: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function JenisPermohonanTab() {
+  const [applicationTypes, setApplicationTypes] = useState<ApplicationTypeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAt, setEditingAt] = useState<ApplicationTypeRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ code: '', label: '', ppkpRoute: 'PPKP_L', sortOrder: '0', isActive: true });
+
+  // Delete state
+  const [deleteAt, setDeleteAt] = useState<ApplicationTypeRow | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/application-types?active=false', {
+        headers: buildAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Gagal memuatkan data');
+      const data = await res.json();
+      setApplicationTypes(data);
+    } catch (err: any) {
+      setError(err.message || 'Gagal memuatkan data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const resetForm = useCallback(() => {
+    setForm({ code: '', label: '', ppkpRoute: 'PPKP_L', sortOrder: '0', isActive: true });
+    setEditingAt(null);
+  }, []);
+
+  const openCreateDialog = () => {
+    resetForm();
+    const maxSort = applicationTypes.reduce((max, at) => Math.max(max, at.sortOrder), 0);
+    setForm((f) => ({ ...f, sortOrder: String(maxSort + 1) }));
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (at: ApplicationTypeRow) => {
+    setEditingAt(at);
+    setForm({
+      code: at.code,
+      label: at.label,
+      ppkpRoute: at.ppkpRoute,
+      sortOrder: String(at.sortOrder),
+      isActive: at.isActive,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.code.trim()) {
+      toast.error('Kod jenis permohonan diperlukan');
+      return;
+    }
+    if (!form.label.trim()) {
+      toast.error('Label jenis permohonan diperlukan');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingAt) {
+        await putData(`/api/application-types/${editingAt.id}`, {
+          code: form.code.trim(),
+          label: form.label.trim(),
+          ppkpRoute: form.ppkpRoute,
+          sortOrder: form.sortOrder,
+          isActive: form.isActive,
+        });
+        toast.success('Jenis permohonan berjaya dikemas kini');
+      } else {
+        await postData('/api/application-types', {
+          code: form.code.trim(),
+          label: form.label.trim(),
+          ppkpRoute: form.ppkpRoute,
+          sortOrder: form.sortOrder,
+        });
+        toast.success('Jenis permohonan baharu berjaya ditambah');
+      }
+
+      setDialogOpen(false);
+      resetForm();
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa menyimpan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteAt) return;
+    try {
+      const result = await deleteData(`/api/application-types/${deleteAt.id}`);
+      if (result.deactivated) {
+        toast.info(result.message, { duration: 5000 });
+      } else {
+        toast.success('Jenis permohonan berjaya dipadam');
+      }
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa memadam');
+    } finally {
+      setDeleteAt(null);
+    }
+  };
+
+  const handleToggleActive = async (at: ApplicationTypeRow) => {
+    try {
+      await putData(`/api/application-types/${at.id}`, { isActive: !at.isActive });
+      toast.success(at.isActive ? 'Jenis permohonan dinyahaktifkan' : 'Jenis permohonan diaktifkan');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa mengemas kini');
+    }
+  };
+
+  const activeTypes = applicationTypes.filter((at) => at.isActive);
+  const inactiveTypes = applicationTypes.filter((at) => !at.isActive);
+
+  return (
+    <div className="space-y-4">
+      {/* Header + Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Pengurusan Jenis Permohonan</h2>
+          <p className="text-sm text-muted-foreground">Tambah, edit, padam, dan urus senarai jenis permohonan serta penghalaan PPKP</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => fetchData()} title="Muat semula">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" /> Tambah Jenis Permohonan
+          </Button>
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+            <p className="text-sm text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Types */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Aktif ({activeTypes.length})
+          </CardTitle>
+          <CardDescription>Jenis permohonan yang muncul dalam dropdown dan penghalaan PPKP masing-masing</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Memuatkan...</span>
+            </div>
+          ) : activeTypes.length === 0 ? (
+            <div className="py-8 text-center">
+              <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+              <p className="text-sm text-muted-foreground">Tiada jenis permohonan aktif</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px]">Susun</TableHead>
+                  <TableHead className="w-[120px]">Kod</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead className="w-[140px]">Penghalaan PPKP</TableHead>
+                  <TableHead className="w-[80px]">Status</TableHead>
+                  <TableHead className="w-[130px] text-right">Tindakan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activeTypes.map((at) => (
+                  <TableRow key={at.id}>
+                    <TableCell className="text-center text-muted-foreground text-xs font-mono">
+                      {at.sortOrder}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] font-mono">
+                        {at.code}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{at.label}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          at.ppkpRoute === 'PPKP_L'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-teal-50 text-teal-700 border-teal-200'
+                        }`}
+                      >
+                        {at.ppkpRoute === 'PPKP_L' ? 'PPKP(L) - Lesen' : 'PPKP(P) - Pasar'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                        Aktif
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(at)}
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(at)}
+                          title="Nyahaktifkan"
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        >
+                          <Ban className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteAt(at)}
+                          title="Padam"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Inactive Types */}
+      {inactiveTypes.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-muted-foreground">
+              <Ban className="h-4 w-4" />
+              Tidak Aktif ({inactiveTypes.length})
+            </CardTitle>
+            <CardDescription>Jenis permohonan yang telah dinyahaktifkan dan tidak muncul dalam dropdown</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px]">Susun</TableHead>
+                  <TableHead className="w-[120px]">Kod</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead className="w-[140px]">Penghalaan PPKP</TableHead>
+                  <TableHead className="w-[80px]">Status</TableHead>
+                  <TableHead className="w-[130px] text-right">Tindakan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inactiveTypes.map((at) => (
+                  <TableRow key={at.id} className="opacity-60">
+                    <TableCell className="text-center text-muted-foreground text-xs font-mono">
+                      {at.sortOrder}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] font-mono">
+                        {at.code}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{at.label}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          at.ppkpRoute === 'PPKP_L'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-teal-50 text-teal-700 border-teal-200'
+                        }`}
+                      >
+                        {at.ppkpRoute === 'PPKP_L' ? 'PPKP(L) - Lesen' : 'PPKP(P) - Pasar'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] bg-gray-50 text-gray-500 border-gray-200">
+                        Tidak Aktif
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(at)}
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(at)}
+                          title="Aktifkan semula"
+                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteAt(at)}
+                          title="Padam"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); resetForm(); } }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{editingAt ? 'Edit Jenis Permohonan' : 'Tambah Jenis Permohonan Baharu'}</DialogTitle>
+            <DialogDescription>
+              {editingAt
+                ? 'Kemas kini maklumat jenis permohonan dan penghalaan PPKP.'
+                : 'Tambah jenis permohonan baharu. Kod akan digunakan sebagai rujukan dalam sistem.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="at-code">Kod *</Label>
+                <Input
+                  id="at-code"
+                  value={form.code}
+                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase().replace(/\s+/g, '_') }))}
+                  placeholder="Cth: PERMOHONAN_BARU"
+                  disabled={!!editingAt}
+                  className={editingAt ? 'bg-muted' : ''}
+                />
+                <p className="text-[10px] text-muted-foreground">Aksara besar, tanpa ruang. Tidak boleh diubah selepas dicipta.</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="at-label">Label *</Label>
+                <Input
+                  id="at-label"
+                  value={form.label}
+                  onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+                  placeholder="Cth: Permohonan Baru"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="at-ppkpRoute">Penghalaan PPKP *</Label>
+                <Select
+                  value={form.ppkpRoute}
+                  onValueChange={(v) => setForm((f) => ({ ...f, ppkpRoute: v }))}
+                >
+                  <SelectTrigger id="at-ppkpRoute">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PPKP_L">PPKP(L) - Lesen</SelectItem>
+                    <SelectItem value="PPKP_P">PPKP(P) - Pasar</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  {form.ppkpRoute === 'PPKP_L'
+                    ? 'Akan dihala ke PPKP(L) → PPL(L)'
+                    : 'Akan dihala ke PPKP(P) → PPL(P)'}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="at-sortOrder">Susunan</Label>
+                <Input
+                  id="at-sortOrder"
+                  type="number"
+                  min="0"
+                  value={form.sortOrder}
+                  onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {editingAt && (
+              <div className="grid gap-2">
+                <Label htmlFor="at-active">Status</Label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="at-active"
+                    checked={form.isActive}
+                    onCheckedChange={(checked) => setForm((f) => ({ ...f, isActive: checked }))}
+                  />
+                  <span className="text-sm">{form.isActive ? 'Aktif' : 'Tidak Aktif'}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
+              Batal
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingAt ? 'Simpan Perubahan' : 'Tambah'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteAt} onOpenChange={(open) => { if (!open) setDeleteAt(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">⚠️ Padam Jenis Permohonan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Adakah anda pasti ingin memadam <strong>{deleteAt?.label}</strong> ({deleteAt?.code})?
+              {deleteAt?.isActive
+                ? ' Jika jenis permohonan ini sedang digunakan oleh permohonan, ia akan dinyahaktifkan sahaja dan tidak akan dipadam.'
                 : ' Tindakan ini tidak boleh dibatalkan.'}
             </AlertDialogDescription>
           </AlertDialogHeader>

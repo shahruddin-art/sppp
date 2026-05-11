@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/rbac';
-import { APPLICATION_TYPES } from '@/lib/constants';
+import { getApplicationTypeMap } from '@/lib/app-type-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +59,9 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'asc' },
     });
 
+    // Get application type map for label resolution
+    const appTypeMap = await getApplicationTypeMap();
+
     // Compute summary statistics
     const typeCounts: Record<string, number> = {};
     const zoneCounts: Record<string, number> = {};
@@ -66,7 +69,7 @@ export async function GET(request: Request) {
 
     for (const app of applications) {
       // Type counts
-      const typeLabel = (APPLICATION_TYPES as any)[app.applicationType]?.label || app.applicationType;
+      const typeLabel = appTypeMap[app.applicationType]?.label || app.applicationType;
       typeCounts[typeLabel] = (typeCounts[typeLabel] || 0) + 1;
 
       // Zone counts
@@ -86,7 +89,7 @@ export async function GET(request: Request) {
         applicantIc: app.applicantIc,
         applicantPhone: app.applicantPhone,
         applicationType: app.applicationType,
-        applicationTypeLabel: (APPLICATION_TYPES as any)[app.applicationType]?.label || app.applicationType,
+        applicationTypeLabel: appTypeMap[app.applicationType]?.label || app.applicationType,
         businessType: app.businessType,
         zone: app.zone,
         status: app.status,

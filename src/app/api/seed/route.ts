@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       await db.application.deleteMany();
       await db.kpiConfig.deleteMany();
       await db.businessType.deleteMany();
+      await db.applicationType.deleteMany();
       await db.user.deleteMany();
     }
 
@@ -102,6 +103,19 @@ export async function POST(request: Request) {
 
     for (const bt of businessTypes) {
       await db.businessType.create({ data: bt });
+    }
+
+    // Create application types
+    const applicationTypes = [
+      { code: 'PERMOHONAN_BARU', label: 'Permohonan Baru', ppkpRoute: 'PPKP_L', sortOrder: 1 },
+      { code: 'TUKAR_NAMA_SYARIKAT', label: 'Tukar Nama Syarikat', ppkpRoute: 'PPKP_L', sortOrder: 2 },
+      { code: 'TAMBAH_KURANG_PREMIS', label: 'Tambah/Kurang Premis', ppkpRoute: 'PPKP_L', sortOrder: 3 },
+      { code: 'TAMBAH_TUKAR_AKTIVITI', label: 'Tambah/Tukar Aktiviti', ppkpRoute: 'PPKP_P', sortOrder: 4 },
+      { code: 'PINDAH_MILIK_LESEN', label: 'Pindah Milik Lesen', ppkpRoute: 'PPKP_L', sortOrder: 5 },
+    ];
+
+    for (const at of applicationTypes) {
+      await db.applicationType.create({ data: at });
     }
 
     // Create sample applications with various statuses
@@ -331,6 +345,7 @@ export async function POST(request: Request) {
       userCount: users.length,
       kpiConfigCount: kpiConfigs.length,
       businessTypeCount: businessTypes.length,
+      applicationTypeCount: applicationTypes.length,
       applicationCount: applications.length,
     });
   } catch (error) {

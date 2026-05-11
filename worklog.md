@@ -163,3 +163,48 @@ Stage Summary:
 - Smart delete: if a business type is in use, it's deactivated instead of deleted
 - Business types have sort order for controlling dropdown order
 - 14 business types seeded matching the previous static constant
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Admin CRUD for Jenis Permohonan dropdown (add, edit, delete, change ppkpRoute)
+
+Work Log:
+- Added `ApplicationType` model to Prisma schema with fields: id, code (unique), label, ppkpRoute, isActive, sortOrder, createdAt, updatedAt
+- Ran `db:push` to sync schema with database
+- Seeded 5 initial application types (PERMOHONAN_BARU, TUKAR_NAMA_SYARIKAT, TAMBAH_KURANG_PREMIS, TAMBAH_TUKAR_AKTIVITI, PINDAH_MILIK_LESEN)
+- Created API routes:
+  - GET/POST `/api/application-types` - List all (with active filter) and Create new
+  - PUT/DELETE `/api/application-types/[id]` - Update and Delete (with smart soft-delete if in use)
+- Created `app-type-cache.ts` server-side cache for application type lookups (1-minute TTL)
+- Created `useApplicationTypes` hook for frontend dropdowns
+- Added "Jenis Permohonan" tab to admin dashboard with:
+  - Table view of active types showing code, label, ppkpRoute, and status
+  - Collapsible section for inactive types
+  - Create/Edit dialog with code, label, ppkpRoute (PPKP_L/PPKP_P), sortOrder, isActive
+  - Code field auto-uppercase and disabled after creation
+  - Delete confirmation with smart handling (soft-delete if type is in use)
+  - Toggle active/inactive with one click
+  - PPKP route shown with color-coded badges (emerald for PPKP_L, teal for PPKP_P)
+- Updated ALL frontend dropdowns to use dynamic application types from API:
+  - `kaunter-dashboard.tsx` - DaftarPermohonan
+  - `admin-dashboard.tsx` - PermohonanTab and KonfigurasiTab
+  - `application-form.tsx` - Standalone form
+- Updated ALL backend API routes to use database for ppkpRoute and labels:
+  - `/api/applications/route.ts` - GET and POST handlers
+  - `/api/applications/[id]/route.ts` - GET, PUT, DELETE handlers
+  - `/api/applications/[id]/sticker/route.ts` - Sticker PDF generation
+  - `/api/reports/daily-received/route.ts` - Daily report
+  - `/api/performance/route.ts` - Performance statistics
+- Added cache invalidation when application types are modified via API
+- Updated seed route to include application type seeding
+- Lint passes clean, all APIs verified working
+
+Stage Summary:
+- Admin can now add, edit, delete, and toggle active/inactive status for application types
+- Admin can change PPKP routing (PPKP_L or PPKP_P) for each application type
+- All frontend dropdowns now use dynamic data from API
+- All backend routes now use database for ppkpRoute and label resolution (with caching)
+- Smart delete: if an application type is in use, it's deactivated instead of deleted
+- Code field is immutable after creation to maintain data integrity
+- Cache invalidation ensures changes are reflected immediately

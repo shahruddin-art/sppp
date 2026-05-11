@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { WORKFLOW_STEPS, APPLICATION_TYPES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { WORKFLOW_STEPS } from '@/lib/constants';
+import { getApplicationTypeMap, getPPKPRoleFromDB } from '@/lib/app-type-cache';
+import { getPPLRole } from '@/lib/constants';
 import { requireAuth, canListApplications } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
@@ -46,13 +48,15 @@ export async function GET(
       remainingDays = Math.round(diff / (1000 * 60 * 60 * 24) * 10) / 10;
     }
 
+    const appTypeMap = await getApplicationTypeMap();
+
     const enriched = {
       ...application,
       currentStepStatus: currentStepData?.status || null,
       currentStepName: currentStepData ? (WORKFLOW_STEPS as any)[currentStepData.step]?.label || currentStepData.step : null,
       isOverdue: overdueSteps.length > 0,
       remainingDays,
-      applicationTypeLabel: (APPLICATION_TYPES as any)[application.applicationType]?.label || application.applicationType,
+      applicationTypeLabel: appTypeMap[application.applicationType]?.label || application.applicationType,
     };
 
     return NextResponse.json(enriched);
@@ -127,7 +131,7 @@ export async function PUT(
     const typeChanged = applicationType && applicationType !== existing.applicationType;
 
     if (typeChanged) {
-      const ppkpRole = getPPKPRole(newApplicationType);
+      const ppkpRole = await getPPKPRoleFromDB(newApplicationType);
       const pplRole = getPPLRole(ppkpRole);
 
       // Find the correct PPKP and PPL staff for the new type
@@ -196,6 +200,7 @@ export async function PUT(
     });
 
     // Add computed fields for response
+    const appTypeMap = await getApplicationTypeMap();
     const currentStepData = updated.steps.find(s => s.status === 'IN_PROGRESS' || s.status === 'PENDING');
     const overdueSteps = updated.steps.filter(s =>
       s.status === 'OVERDUE' || (s.slaDeadline && new Date(s.slaDeadline) < new Date() && s.status !== 'COMPLETED')
@@ -213,7 +218,7 @@ export async function PUT(
       currentStepName: currentStepData ? (WORKFLOW_STEPS as any)[currentStepData.step]?.label || currentStepData.step : null,
       isOverdue: overdueSteps.length > 0,
       remainingDays,
-      applicationTypeLabel: (APPLICATION_TYPES as any)[updated.applicationType]?.label || updated.applicationType,
+      applicationTypeLabel: appTypeMap[updated.applicationType]?.label || updated.applicationType,
     };
 
     return NextResponse.json(enriched);

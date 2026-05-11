@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { WORKFLOW_STEPS, APPLICATION_TYPES } from '@/lib/constants';
+import { WORKFLOW_STEPS } from '@/lib/constants';
+import { getApplicationTypeMap } from '@/lib/app-type-cache';
 import { requireAuth, canViewPerformance } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
@@ -114,9 +115,10 @@ export async function GET(request: Request) {
     }
 
     // Performance by application type
+    const appTypeMap = await getApplicationTypeMap();
     const typePerformance: Record<string, { total: number; completed: number; avgDays: number }> = {};
     for (const app of applications) {
-      const typeLabel = (APPLICATION_TYPES as any)[app.applicationType]?.label || app.applicationType;
+      const typeLabel = appTypeMap[app.applicationType]?.label || app.applicationType;
       if (!typePerformance[typeLabel]) {
         typePerformance[typeLabel] = { total: 0, completed: 0, avgDays: 0 };
       }

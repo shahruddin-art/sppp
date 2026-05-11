@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { db } from '@/lib/db';
 import { requireAuth, canListApplications } from '@/lib/rbac';
-import { APPLICATION_TYPES } from '@/lib/constants';
+import { getApplicationTypeMap } from '@/lib/app-type-cache';
 
 // GET /api/applications/[id]/sticker - Generate sticker fail PDF
 export async function GET(
@@ -30,7 +30,8 @@ export async function GET(
     }
 
     const fileNumber = application.fileNumber || application.referenceNo;
-    const applicationTypeLabel = (APPLICATION_TYPES as any)[application.applicationType]?.label || application.applicationType;
+    const appTypeMap = await getApplicationTypeMap();
+    const applicationTypeLabel = appTypeMap[application.applicationType]?.label || application.applicationType;
     const jenisLesen = (application.businessType || applicationTypeLabel).toUpperCase();
     const namaPerniagaan = application.applicantName.toUpperCase();
     const namaPelesen = application.applicantName.toUpperCase();

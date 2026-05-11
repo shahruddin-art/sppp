@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { generateReferenceNo, getPPKPRole, getPPLRole, APPLICATION_TYPES, WORKFLOW_STEPS } from '@/lib/constants';
+import { generateReferenceNo, WORKFLOW_STEPS } from '@/lib/constants';
+import { getApplicationTypeMap, getPPKPRoleFromDB } from '@/lib/app-type-cache';
+import { getPPLRole } from '@/lib/constants';
 import { requireAuth, canCreateApplication, canListApplications, getApplicationFilterForRole } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +61,9 @@ export async function GET(request: Request) {
       db.application.count({ where }),
     ]);
 
+    // Get application type map for label resolution
+    const appTypeMap = await getApplicationTypeMap();
+
     // Add computed fields for each application
     const enriched = applications.map(app => {
       const currentStepData = app.steps.find(s => s.status === 'IN_PROGRESS' || s.status === 'PENDING');
@@ -78,7 +83,7 @@ export async function GET(request: Request) {
         currentStepName: currentStepData ? (WORKFLOW_STEPS as any)[currentStepData.step]?.label || currentStepData.step : null,
         isOverdue: overdueSteps.length > 0,
         remainingDays,
-        applicationTypeLabel: (APPLICATION_TYPES as any)[app.applicationType]?.label || app.applicationType,
+        applicationTypeLabel: appTypeMap[app.applicationType]?.label || app.applicationType,
       };
     });
 
@@ -132,7 +137,7 @@ export async function POST(request: Request) {
 
     // Find PT staff for this zone
     const ptStaff = await db.user.findFirst({ where: { role: 'PT', zone, isActive: true } });
-    const ppkpRole = getPPKPRole(applicationType);
+    const ppkpRole = await getPPKPRoleFromDB(applicationType);
     const ppkpStaff = await db.user.findFirst({ where: { role: ppkpRole, isActive: true } });
     const pplRole = getPPLRole(ppkpRole);
     const pplStaff = await db.user.findFirst({ where: { role: pplRole, isActive: true } });

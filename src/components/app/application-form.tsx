@@ -19,13 +19,15 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { postData } from '@/hooks/use-fetch';
-import { APPLICATION_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { ZONES } from '@/lib/constants';
 import { useBusinessTypes } from '@/hooks/use-business-types';
+import { useApplicationTypes } from '@/hooks/use-application-types';
 import { formatApplicationType, formatStaffRole } from '@/lib/formatters';
 import { toast } from 'sonner';
 
 export default function ApplicationForm() {
   const { businessTypes } = useBusinessTypes();
+  const { applicationTypes } = useApplicationTypes();
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantIc: '',
@@ -72,8 +74,10 @@ export default function ApplicationForm() {
     }
   };
 
-  const ppkpRoute = formData.applicationType ? getPPKPRole(formData.applicationType) : null;
-  const pplRoute = ppkpRoute ? getPPLRole(ppkpRoute) : null;
+  const ppkpRoute = formData.applicationType
+    ? (applicationTypes.find((at) => at.code === formData.applicationType)?.ppkpRoute || 'PPKP_L')
+    : null;
+  const pplRoute = ppkpRoute ? (ppkpRoute === 'PPKP_L' ? 'PPL_L' : 'PPL_P') : null;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -162,9 +166,9 @@ export default function ApplicationForm() {
                       <SelectValue placeholder="Pilih jenis permohonan" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(APPLICATION_TYPES).map(([key, val]) => (
-                        <SelectItem key={key} value={key}>
-                          {val.label}
+                      {applicationTypes.map((at) => (
+                        <SelectItem key={at.code} value={at.code}>
+                          {at.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

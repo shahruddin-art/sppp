@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { postData } from '@/hooks/use-fetch';
-import { APPLICATION_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { ZONES } from '@/lib/constants';
 import { useBusinessTypes } from '@/hooks/use-business-types';
+import { useApplicationTypes } from '@/hooks/use-application-types';
 import {
   formatApplicationType,
 } from '@/lib/formatters';
@@ -45,6 +46,7 @@ interface KaunterDashboardProps {
 // ============================================================
 function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
   const { businessTypes } = useBusinessTypes();
+  const { applicationTypes } = useApplicationTypes();
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantIc: '',
@@ -60,8 +62,10 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<any>(null);
 
-  const ppkpRoute = formData.applicationType ? getPPKPRole(formData.applicationType) : null;
-  const pplRoute = ppkpRoute ? getPPLRole(ppkpRoute) : null;
+  const ppkpRoute = formData.applicationType
+    ? (applicationTypes.find((at) => at.code === formData.applicationType)?.ppkpRoute || 'PPKP_L')
+    : null;
+  const pplRoute = ppkpRoute ? (ppkpRoute === 'PPKP_L' ? 'PPL_L' : 'PPL_P') : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,9 +218,9 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                       <SelectValue placeholder="Pilih jenis permohonan" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(APPLICATION_TYPES).map(([key, val]) => (
-                        <SelectItem key={key} value={key}>
-                          {val.label}
+                      {applicationTypes.map((at) => (
+                        <SelectItem key={at.code} value={at.code}>
+                          {at.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
