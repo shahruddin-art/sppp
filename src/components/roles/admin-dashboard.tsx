@@ -68,6 +68,7 @@ import {
   RefreshCw,
   ShieldCheck,
   AlertTriangle,
+  Store,
   FileText,
   Eye,
   ChevronLeft,
@@ -75,10 +76,11 @@ import {
   ClipboardList,
   CalendarDays,
 } from 'lucide-react';
-import { useFetch, postData, putData, deleteData } from '@/hooks/use-fetch';
+import { useFetch, postData, putData, deleteData, buildAuthHeaders } from '@/hooks/use-fetch';
 import { getSessionToken } from '@/lib/auth-store';
 import { toast } from 'sonner';
-import { APPLICATION_TYPES, BUSINESS_TYPES, ZONES, STAFF_ROLES, APPLICATION_STATUSES, PLB_DECISIONS } from '@/lib/constants';
+import { APPLICATION_TYPES, ZONES, STAFF_ROLES, APPLICATION_STATUSES, PLB_DECISIONS } from '@/lib/constants';
+import { useBusinessTypes } from '@/hooks/use-business-types';
 import {
   formatStaffRole,
   getZoneColor,
@@ -155,7 +157,7 @@ interface AdminDashboardProps {
   };
 }
 
-type TabKey = 'permohonan' | 'pengguna' | 'konfigurasi' | 'kpi' | 'laporan';
+type TabKey = 'permohonan' | 'pengguna' | 'konfigurasi' | 'jenisPerniagaan' | 'kpi' | 'laporan';
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
@@ -163,6 +165,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'permohonan', label: 'Permohonan', icon: <FileText className="h-4 w-4" /> },
   { key: 'pengguna', label: 'Pengguna', icon: <Users className="h-4 w-4" /> },
   { key: 'konfigurasi', label: 'Konfigurasi', icon: <Settings className="h-4 w-4" /> },
+  { key: 'jenisPerniagaan', label: 'Jenis Perniagaan', icon: <Store className="h-4 w-4" /> },
   { key: 'kpi', label: 'KPI', icon: <Target className="h-4 w-4" /> },
   { key: 'laporan', label: 'Laporan', icon: <BarChart3 className="h-4 w-4" /> },
 ];
@@ -214,6 +217,7 @@ export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
       {activeTab === 'permohonan' && <PermohonanTab />}
       {activeTab === 'pengguna' && <PenggunaTab />}
       {activeTab === 'konfigurasi' && <KonfigurasiTab />}
+      {activeTab === 'jenisPerniagaan' && <JenisPerniagaanTab />}
       {activeTab === 'kpi' && <KpiTab />}
       {activeTab === 'laporan' && <LaporanTab />}
     </div>
@@ -225,6 +229,7 @@ export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function PermohonanTab() {
+  const { businessTypes } = useBusinessTypes();
   // Server-side pagination state
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -901,7 +906,7 @@ function PermohonanTab() {
                       <SelectValue placeholder="Pilih jenis perniagaan" />
                     </SelectTrigger>
                     <SelectContent>
-                      {BUSINESS_TYPES.map((bt) => (
+                      {businessTypes.map((bt) => (
                         <SelectItem key={bt} value={bt}>
                           {bt}
                         </SelectItem>
@@ -1654,6 +1659,405 @@ function KonfigurasiTab() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 2.5: JENIS PERNIAGAAN (Business Type Management)
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface BusinessTypeRow {
+  id: string;
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function JenisPerniagaanTab() {
+  const [businessTypes, setBusinessTypes] = useState<BusinessTypeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingBt, setEditingBt] = useState<BusinessTypeRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: '', sortOrder: '0', isActive: true });
+
+  // Delete state
+  const [deleteBt, setDeleteBt] = useState<BusinessTypeRow | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/business-types?active=false', {
+        headers: buildAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Gagal memuatkan data');
+      const data = await res.json();
+      setBusinessTypes(data);
+    } catch (err: any) {
+      setError(err.message || 'Gagal memuatkan data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const resetForm = useCallback(() => {
+    setForm({ name: '', sortOrder: '0', isActive: true });
+    setEditingBt(null);
+  }, []);
+
+  const openCreateDialog = () => {
+    resetForm();
+    // Default sort order to last + 1
+    const maxSort = businessTypes.reduce((max, bt) => Math.max(max, bt.sortOrder), 0);
+    setForm((f) => ({ ...f, sortOrder: String(maxSort + 1) }));
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (bt: BusinessTypeRow) => {
+    setEditingBt(bt);
+    setForm({
+      name: bt.name,
+      sortOrder: String(bt.sortOrder),
+      isActive: bt.isActive,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      toast.error('Nama jenis perniagaan diperlukan');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingBt) {
+        await putData(`/api/business-types/${editingBt.id}`, {
+          name: form.name.trim(),
+          sortOrder: form.sortOrder,
+          isActive: form.isActive,
+        });
+        toast.success('Jenis perniagaan berjaya dikemas kini');
+      } else {
+        await postData('/api/business-types', {
+          name: form.name.trim(),
+          sortOrder: form.sortOrder,
+        });
+        toast.success('Jenis perniagaan baharu berjaya ditambah');
+      }
+
+      setDialogOpen(false);
+      resetForm();
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa menyimpan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteBt) return;
+    try {
+      const result = await deleteData(`/api/business-types/${deleteBt.id}`);
+      if (result.deactivated) {
+        toast.info(result.message, { duration: 5000 });
+      } else {
+        toast.success('Jenis perniagaan berjaya dipadam');
+      }
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa memadam');
+    } finally {
+      setDeleteBt(null);
+    }
+  };
+
+  const handleToggleActive = async (bt: BusinessTypeRow) => {
+    try {
+      await putData(`/api/business-types/${bt.id}`, { isActive: !bt.isActive });
+      toast.success(bt.isActive ? 'Jenis perniagaan dinyahaktifkan' : 'Jenis perniagaan diaktifkan');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ralat semasa mengemas kini');
+    }
+  };
+
+  const activeTypes = businessTypes.filter((bt) => bt.isActive);
+  const inactiveTypes = businessTypes.filter((bt) => !bt.isActive);
+
+  return (
+    <div className="space-y-4">
+      {/* Header + Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Pengurusan Jenis Perniagaan</h2>
+          <p className="text-sm text-muted-foreground">Tambah, edit, padam, dan urus senarai jenis perniagaan untuk dropdown</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => fetchData()} title="Muat semula">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" /> Tambah Jenis Perniagaan
+          </Button>
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+            <p className="text-sm text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Types */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Store className="h-4 w-4" />
+            Aktif ({activeTypes.length})
+          </CardTitle>
+          <CardDescription>Jenis perniagaan yang muncul dalam dropdown permohonan</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Memuatkan...</span>
+            </div>
+          ) : activeTypes.length === 0 ? (
+            <div className="py-8 text-center">
+              <Store className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+              <p className="text-sm text-muted-foreground">Tiada jenis perniagaan aktif</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px]">Susun</TableHead>
+                  <TableHead>Nama Jenis Perniagaan</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[130px] text-right">Tindakan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activeTypes.map((bt) => (
+                  <TableRow key={bt.id}>
+                    <TableCell className="text-center text-muted-foreground text-xs font-mono">
+                      {bt.sortOrder}
+                    </TableCell>
+                    <TableCell className="font-medium">{bt.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                        Aktif
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(bt)}
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(bt)}
+                          title="Nyahaktifkan"
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        >
+                          <Ban className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteBt(bt)}
+                          title="Padam"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Inactive Types */}
+      {inactiveTypes.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-muted-foreground">
+              <Ban className="h-4 w-4" />
+              Tidak Aktif ({inactiveTypes.length})
+            </CardTitle>
+            <CardDescription>Jenis perniagaan yang telah dinyahaktifkan dan tidak muncul dalam dropdown</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px]">Susun</TableHead>
+                  <TableHead>Nama Jenis Perniagaan</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[130px] text-right">Tindakan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inactiveTypes.map((bt) => (
+                  <TableRow key={bt.id} className="opacity-60">
+                    <TableCell className="text-center text-muted-foreground text-xs font-mono">
+                      {bt.sortOrder}
+                    </TableCell>
+                    <TableCell className="font-medium">{bt.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] bg-gray-50 text-gray-500 border-gray-200">
+                        Tidak Aktif
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(bt)}
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(bt)}
+                          title="Aktifkan semula"
+                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteBt(bt)}
+                          title="Padam"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); resetForm(); } }}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>{editingBt ? 'Edit Jenis Perniagaan' : 'Tambah Jenis Perniagaan Baharu'}</DialogTitle>
+            <DialogDescription>
+              {editingBt
+                ? 'Kemas kini maklumat jenis perniagaan.'
+                : 'Tambah jenis perniagaan baharu yang akan muncul dalam dropdown permohonan.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="bt-name">Nama Jenis Perniagaan *</Label>
+              <Input
+                id="bt-name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Cth: Restoran / Kedai Makan"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="bt-sortOrder">Susunan</Label>
+                <Input
+                  id="bt-sortOrder"
+                  type="number"
+                  min="0"
+                  value={form.sortOrder}
+                  onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+
+              {editingBt && (
+                <div className="grid gap-2">
+                  <Label htmlFor="bt-active">Status</Label>
+                  <div className="flex items-center gap-2 h-9">
+                    <Switch
+                      id="bt-active"
+                      checked={form.isActive}
+                      onCheckedChange={(checked) => setForm((f) => ({ ...f, isActive: checked }))}
+                    />
+                    <span className="text-sm">{form.isActive ? 'Aktif' : 'Tidak Aktif'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
+              Batal
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingBt ? 'Simpan Perubahan' : 'Tambah'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteBt} onOpenChange={(open) => { if (!open) setDeleteBt(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">⚠️ Padam Jenis Perniagaan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Adakah anda pasti ingin memadam <strong>{deleteBt?.name}</strong>?
+              {deleteBt?.isActive
+                ? ' Jika jenis perniagaan ini sedang digunakan oleh permohonan, ia akan dinyahaktifkan sahaja dan tidak akan dipadam.'
+                : ' Tindakan ini tidak boleh dibatalkan.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Padam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

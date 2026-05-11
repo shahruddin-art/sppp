@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       await db.workflowStep.deleteMany();
       await db.application.deleteMany();
       await db.kpiConfig.deleteMany();
+      await db.businessType.deleteMany();
       await db.user.deleteMany();
     }
 
@@ -79,6 +80,28 @@ export async function POST(request: Request) {
 
     for (const kpi of kpiConfigs) {
       await db.kpiConfig.create({ data: kpi });
+    }
+
+    // Create business types
+    const businessTypes = [
+      { name: 'Restoran / Kedai Makan', sortOrder: 1 },
+      { name: 'Kedai Runcit / Minimart', sortOrder: 2 },
+      { name: 'Pasar Malam / Gerak Kerja', sortOrder: 3 },
+      { name: 'Bidan / Klinik', sortOrder: 4 },
+      { name: 'Salun Kecantikan / Pendandan Rambut', sortOrder: 5 },
+      { name: 'Dobi / Cucian', sortOrder: 6 },
+      { name: 'Stesen Minyak', sortOrder: 7 },
+      { name: 'Bengkel Kenderaan', sortOrder: 8 },
+      { name: 'Perkilangan / Kilang', sortOrder: 9 },
+      { name: 'Pengangkutan / Logistik', sortOrder: 10 },
+      { name: 'Pendidikan / Tuisyen', sortOrder: 11 },
+      { name: 'Perkhidmatan Profesional', sortOrder: 12 },
+      { name: 'Pertanian / Akuakultur', sortOrder: 13 },
+      { name: 'Lain-lain', sortOrder: 14 },
+    ];
+
+    for (const bt of businessTypes) {
+      await db.businessType.create({ data: bt });
     }
 
     // Create sample applications with various statuses
@@ -307,6 +330,7 @@ export async function POST(request: Request) {
       message: 'Database seeded successfully',
       userCount: users.length,
       kpiConfigCount: kpiConfigs.length,
+      businessTypeCount: businessTypes.length,
       applicationCount: applications.length,
     });
   } catch (error) {

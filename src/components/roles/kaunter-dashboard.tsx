@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { postData } from '@/hooks/use-fetch';
-import { APPLICATION_TYPES, BUSINESS_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { APPLICATION_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { useBusinessTypes } from '@/hooks/use-business-types';
 import {
   formatApplicationType,
 } from '@/lib/formatters';
@@ -43,6 +44,7 @@ interface KaunterDashboardProps {
 // Tab 1 – Daftar Permohonan
 // ============================================================
 function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
+  const { businessTypes } = useBusinessTypes();
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantIc: '',
@@ -253,7 +255,7 @@ function DaftarPermohonan({ user }: { user: KaunterDashboardProps['user'] }) {
                       <SelectValue placeholder="Pilih jenis perniagaan" />
                     </SelectTrigger>
                     <SelectContent>
-                      {BUSINESS_TYPES.map((bt) => (
+                      {businessTypes.map((bt) => (
                         <SelectItem key={bt} value={bt}>
                           {bt}
                         </SelectItem>

@@ -129,3 +129,37 @@ Stage Summary:
 - Changing zone automatically re-assigns PT staff
 - Business type is editable for all application types (dropdown for PERMOHONAN_BARU, free text for others)
 - Warning banner shows when application type is being changed
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Admin CRUD for Jenis Perniagaan dropdown (add, edit, delete, toggle active)
+
+Work Log:
+- Added `BusinessType` model to Prisma schema with fields: id, name (unique), isActive, sortOrder, createdAt, updatedAt
+- Ran `db:push` to sync schema with database
+- Created API routes:
+  - GET/POST `/api/business-types` - List all (with active filter) and Create new
+  - PUT/DELETE `/api/business-types/[id]` - Update and Delete (with smart soft-delete if in use)
+- Created `useBusinessTypes` hook (`src/hooks/use-business-types.ts`) for fetching active business types in dropdowns
+- Exported `buildAuthHeaders` from `use-fetch.ts` for use in admin management component
+- Added "Jenis Perniagaan" tab to admin dashboard with:
+  - Table view of active business types with edit/toggle/pad actions
+  - Collapsible section for inactive types with edit/reactivate/pad actions
+  - Create/Edit dialog with name, sort order, and active status fields
+  - Delete confirmation with smart handling (soft-delete if type is in use by applications)
+  - Toggle active/inactive with one click
+- Updated all dropdown components to use dynamic API data:
+  - `kaunter-dashboard.tsx` - DaftarPermohonan uses `useBusinessTypes` hook
+  - `admin-dashboard.tsx` - PermohonanTab uses `useBusinessTypes` hook
+  - `application-form.tsx` - Uses `useBusinessTypes` hook
+- Seeded initial 14 business types into database (matching previous static BUSINESS_TYPES constant)
+- Updated seed route to include business type seeding
+- Lint passes clean, API verified working
+
+Stage Summary:
+- Admin can now add, edit, delete, and toggle active/inactive status for business types
+- Dropdowns are now dynamic - changes by admin are immediately reflected in all forms
+- Smart delete: if a business type is in use, it's deactivated instead of deleted
+- Business types have sort order for controlling dropdown order
+- 14 business types seeded matching the previous static constant

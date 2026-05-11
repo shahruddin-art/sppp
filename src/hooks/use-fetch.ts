@@ -10,7 +10,7 @@ interface UseFetchOptions {
 /**
  * Build headers with session token for authenticated API requests
  */
-function buildAuthHeaders(extra?: Record<string, string>): Record<string, string> {
+export function buildAuthHeaders(extra?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { ...extra };
   const token = getSessionToken();
   if (token) {

@@ -19,11 +19,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { postData } from '@/hooks/use-fetch';
-import { APPLICATION_TYPES, BUSINESS_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { APPLICATION_TYPES, ZONES, getPPKPRole, getPPLRole } from '@/lib/constants';
+import { useBusinessTypes } from '@/hooks/use-business-types';
 import { formatApplicationType, formatStaffRole } from '@/lib/formatters';
 import { toast } from 'sonner';
 
 export default function ApplicationForm() {
+  const { businessTypes } = useBusinessTypes();
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantIc: '',
@@ -199,7 +201,7 @@ export default function ApplicationForm() {
                       <SelectValue placeholder="Pilih jenis perniagaan" />
                     </SelectTrigger>
                     <SelectContent>
-                      {BUSINESS_TYPES.map((bt) => (
+                      {businessTypes.map((bt) => (
                         <SelectItem key={bt} value={bt}>
                           {bt}
                         </SelectItem>
