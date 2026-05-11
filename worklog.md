@@ -98,3 +98,34 @@ Stage Summary:
 - Root cause: localStorage key mismatch (`session_token` vs `sessionToken`)
 - Admin dashboard and senarai-permohonan now use `getSessionToken()` helper consistently
 - All API requests will now properly include auth headers
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Enable admin CRUD operations: tambah, edit, padam, ubah jenis permohonan
+
+Work Log:
+- Reviewed existing admin-dashboard.tsx PermohonanTab - already had UI for create, edit, delete
+- Reviewed PUT API `/api/applications/[id]` - only updated basic fields, did not handle applicationType change
+- Enhanced PUT API to handle applicationType changes:
+  - When applicationType changes, re-route PPKP/PPL staff based on new type routing
+  - Find correct PPKP (PPKP_L or PPKP_P) and PPL (PPL_L or PPL_P) for new type
+  - Update workflow step assignments for PPKP_PROCESSING and PPL_REVIEW steps
+- Enhanced PUT API to handle zone changes:
+  - When zone changes, re-assign PT staff for the new zone
+  - Update PT_FILE_OPENING and PT_FILE_REGISTRATION step assignments
+- Added computed fields to PUT response (isOverdue, remainingDays, applicationTypeLabel) for consistency
+- Fixed frontend edit dialog:
+  - Added `originalApplicationType` state to track type changes
+  - Added amber warning banner when applicationType is changed during edit
+  - Changed businessType field: shows Select dropdown for PERMOHONAN_BARU, shows free-text Input for other types when editing
+  - Fixed applicationType Select onChange to not reset businessType when editing (only resets when creating new)
+  - Fixed businessType in handleSave: properly handles both PERMOHONAN_BARU (Select with Lain-lain) and other types (free text)
+- Lint passes clean
+
+Stage Summary:
+- Admin can now fully CRUD applications including changing application type
+- Changing application type automatically re-routes PPKP/PPL staff assignments
+- Changing zone automatically re-assigns PT staff
+- Business type is editable for all application types (dropdown for PERMOHONAN_BARU, free text for others)
+- Warning banner shows when application type is being changed

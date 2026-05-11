@@ -266,6 +266,9 @@ function PermohonanTab() {
     plbDecisionNotes: '',
   });
 
+  // Track original applicationType for change warning
+  const [originalApplicationType, setOriginalApplicationType] = useState<string>('');
+
   const resetForm = useCallback(() => {
     setForm({
       applicantName: '',
@@ -284,6 +287,7 @@ function PermohonanTab() {
       plbDecisionNotes: '',
     });
     setEditingApp(null);
+    setOriginalApplicationType('');
   }, []);
 
   const openCreateDialog = () => {
@@ -293,6 +297,7 @@ function PermohonanTab() {
 
   const openEditDialog = (app: ApplicationRow) => {
     setEditingApp(app);
+    setOriginalApplicationType(app.applicationType);
     setForm({
       applicantName: app.applicantName,
       applicantIc: app.applicantIc,
@@ -333,7 +338,9 @@ function PermohonanTab() {
           applicantPhone: form.applicantPhone || null,
           applicantAddress: form.applicantAddress || null,
           applicationType: form.applicationType,
-          businessType: form.businessType === 'Lain-lain' ? form.businessTypeOther : (form.businessType || null),
+          businessType: form.applicationType === 'PERMOHONAN_BARU'
+            ? (form.businessType === 'Lain-lain' ? form.businessTypeOther : (form.businessType || null))
+            : (form.businessType || null),
           businessName: form.businessName || null,
           accountNo: form.accountNo || null,
           zone: form.zone,
@@ -833,8 +840,8 @@ function PermohonanTab() {
                     onValueChange={(v) => setForm((f) => ({
                       ...f,
                       applicationType: v,
-                      businessType: v !== 'PERMOHONAN_BARU' ? '' : f.businessType,
-                      businessTypeOther: v !== 'PERMOHONAN_BARU' ? '' : f.businessTypeOther,
+                      // Only reset businessType when creating new (not editing)
+                      ...(editingApp ? {} : { businessType: v !== 'PERMOHONAN_BARU' ? '' : f.businessType, businessTypeOther: v !== 'PERMOHONAN_BARU' ? '' : f.businessTypeOther }),
                     }))}
                   >
                     <SelectTrigger>
@@ -866,8 +873,24 @@ function PermohonanTab() {
                 </div>
               </div>
 
-              {/* Business Type for PERMOHONAN_BARU */}
-              {form.applicationType === 'PERMOHONAN_BARU' && (
+              {/* Warning when changing application type */}
+              {editingApp && originalApplicationType && form.applicationType !== originalApplicationType && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-800">Perubahan Jenis Permohonan</p>
+                      <p className="text-amber-700 text-xs mt-1">
+                        Anda menukar jenis daripada <strong>{(APPLICATION_TYPES as any)[originalApplicationType]?.label || originalApplicationType}</strong> kepada <strong>{(APPLICATION_TYPES as any)[form.applicationType]?.label || form.applicationType}</strong>.
+                        PPKP dan PPL yang bertugas akan dikemas kini mengikut jenis baharu.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Business Type - shown for PERMOHONAN_BARU as required, optional for others */}
+              {form.applicationType === 'PERMOHONAN_BARU' ? (
                 <div className="grid gap-2">
                   <Label>Jenis Perniagaan *</Label>
                   <Select
@@ -894,7 +917,16 @@ function PermohonanTab() {
                     />
                   )}
                 </div>
-              )}
+              ) : editingApp ? (
+                <div className="grid gap-2">
+                  <Label>Jenis Perniagaan / Lesen</Label>
+                  <Input
+                    value={form.businessType}
+                    onChange={(e) => setForm((f) => ({ ...f, businessType: e.target.value }))}
+                    placeholder="Cth: Restoran, Kedai Runcit, G1, G2..."
+                  />
+                </div>
+              ) : null}
 
               {/* Business Name and Account No */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

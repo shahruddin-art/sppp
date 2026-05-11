@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { WORKFLOW_STEPS, APPLICATION_TYPES } from '@/lib/constants';
+import { WORKFLOW_STEPS, APPLICATION_TYPES, getPPKPRole, getPPLRole } from '@/lib/constants';
 import { requireAuth, canListApplications } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
@@ -98,7 +98,10 @@ export async function PUT(
     } = body;
 
     // Check application exists
-    const existing = await db.application.findUnique({ where: { id } });
+    const existing = await db.application.findUnique({
+      where: { id },
+      include: { steps: { orderBy: { createdAt: 'asc' } } },
+    });
     if (!existing) {
       return NextResponse.json({ error: 'Permohonan tidak dijumpai' }, { status: 404 });
     }
@@ -119,6 +122,67 @@ export async function PUT(
     if (plbDecision !== undefined) updateData.plbDecision = plbDecision || null;
     if (plbDecisionNotes !== undefined) updateData.plbDecisionNotes = plbDecisionNotes || null;
 
+    // ── Handle applicationType change: re-route PPKP/PPL staff ──
+    const newApplicationType = applicationType || existing.applicationType;
+    const typeChanged = applicationType && applicationType !== existing.applicationType;
+
+    if (typeChanged) {
+      const ppkpRole = getPPKPRole(newApplicationType);
+      const pplRole = getPPLRole(ppkpRole);
+
+      // Find the correct PPKP and PPL staff for the new type
+      const ppkpStaff = await db.user.findFirst({ where: { role: ppkpRole, isActive: true } });
+      const pplStaff = await db.user.findFirst({ where: { role: pplRole, isActive: true } });
+
+      updateData.ppkpStaffId = ppkpStaff?.id || null;
+      updateData.pplStaffId = pplStaff?.id || null;
+
+      // Update workflow step assignments for PPKP and PPL
+      // PPKP step
+      const ppkpStep = existing.steps.find(s => s.step === 'PPKP_PROCESSING');
+      if (ppkpStep) {
+        await db.workflowStep.update({
+          where: { id: ppkpStep.id },
+          data: { assignedToId: ppkpStaff?.id || null },
+        });
+      }
+
+      // PPL step
+      const pplStep = existing.steps.find(s => s.step === 'PPL_REVIEW');
+      if (pplStep) {
+        await db.workflowStep.update({
+          where: { id: pplStep.id },
+          data: { assignedToId: pplStaff?.id || null },
+        });
+      }
+    }
+
+    // ── Handle zone change: re-assign PT staff ──
+    const newZone = zone || existing.zone;
+    const zoneChanged = zone && zone !== existing.zone;
+
+    if (zoneChanged) {
+      const ptStaff = await db.user.findFirst({ where: { role: 'PT', zone: newZone, isActive: true } });
+      updateData.ptStaffId = ptStaff?.id || null;
+
+      // Update PT step assignments
+      const ptFileStep = existing.steps.find(s => s.step === 'PT_FILE_OPENING');
+      if (ptFileStep) {
+        await db.workflowStep.update({
+          where: { id: ptFileStep.id },
+          data: { assignedToId: ptStaff?.id || null },
+        });
+      }
+
+      const ptRegStep = existing.steps.find(s => s.step === 'PT_FILE_REGISTRATION');
+      if (ptRegStep) {
+        await db.workflowStep.update({
+          where: { id: ptRegStep.id },
+          data: { assignedToId: ptStaff?.id || null },
+        });
+      }
+    }
+
     const updated = await db.application.update({
       where: { id },
       data: updateData,
@@ -131,7 +195,28 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updated);
+    // Add computed fields for response
+    const currentStepData = updated.steps.find(s => s.status === 'IN_PROGRESS' || s.status === 'PENDING');
+    const overdueSteps = updated.steps.filter(s =>
+      s.status === 'OVERDUE' || (s.slaDeadline && new Date(s.slaDeadline) < new Date() && s.status !== 'COMPLETED')
+    );
+
+    let remainingDays: number | null = null;
+    if (currentStepData?.slaDeadline) {
+      const diff = new Date(currentStepData.slaDeadline).getTime() - Date.now();
+      remainingDays = Math.round(diff / (1000 * 60 * 60 * 24) * 10) / 10;
+    }
+
+    const enriched = {
+      ...updated,
+      currentStepStatus: currentStepData?.status || null,
+      currentStepName: currentStepData ? (WORKFLOW_STEPS as any)[currentStepData.step]?.label || currentStepData.step : null,
+      isOverdue: overdueSteps.length > 0,
+      remainingDays,
+      applicationTypeLabel: (APPLICATION_TYPES as any)[updated.applicationType]?.label || updated.applicationType,
+    };
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error('Application PUT error:', error);
     return NextResponse.json({ error: 'Gagal mengemas kini permohonan' }, { status: 500 });
