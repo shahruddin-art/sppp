@@ -98,23 +98,31 @@ export default function PLBDashboard({ user, onSelectApp }: PLBDashboardProps) {
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<string, boolean>>({});
 
-  const { data: allApplications, loading, error, refetch } = useFetch<Application[]>(
-    '/api/applications',
+  const { data: rawApplications, loading, error, refetch } = useFetch<{
+    data: Application[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>(
+    '/api/applications?limit=100',
     { refreshInterval: 15000 }
   );
 
+  const allApplications = rawApplications?.data || [];
+
   // Applications waiting for PLB decision
-  const pendingApplications = (allApplications || []).filter(
+  const pendingApplications = allApplications.filter(
     (app) => app.status === 'PLB_DECISION'
   );
 
   // Recently completed/rejected applications with PLB decisions
-  const completedApplications = (allApplications || [])
+  const completedApplications = allApplications
     .filter((app) => (app.status === 'COMPLETED' || app.status === 'REJECTED') && app.plbDecision)
     .slice(0, 10);
 
   // Count of rejected applications
-  const rejectedCount = (allApplications || []).filter(
+  const rejectedCount = allApplications.filter(
     (app) => app.status === 'REJECTED' && app.plbDecision === 'DITOLAK'
   ).length;
 

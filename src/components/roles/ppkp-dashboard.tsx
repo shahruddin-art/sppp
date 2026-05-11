@@ -97,13 +97,21 @@ export default function PPKPDashboard({ user, onSelectApp }: PPKPDashboardProps)
     ? 'G1, G1/P, G7, G8, G9, G11, Papan Iklan'
     : 'G2, G3, Permit Sementara';
 
-  const { data: allApplications, loading, error, refetch } = useFetch<Application[]>(
-    '/api/applications',
+  const { data: rawApplications, loading, error, refetch } = useFetch<{
+    data: Application[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>(
+    '/api/applications?limit=100',
     { refreshInterval: 15000 }
   );
 
+  const allApplications = rawApplications?.data || [];
+
   // Filter applications for this PPKP role
-  const applications = (allApplications || []).filter(
+  const applications = allApplications.filter(
     (app) => app.status === 'PPKP_PROCESSING' && app.ppkpStaff?.role === user.role
   );
 

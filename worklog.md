@@ -54,3 +54,27 @@ Stage Summary:
 - Center file number in bordered full-width row
 - All inline text layout for NAMA PELESEN and TARIKH rows
 - Lint passes, dev server healthy
+---
+Task ID: 1
+Agent: Main
+Task: Fix "Gagal memuatkan data" error and convert application list to table view with pagination
+
+Work Log:
+- Investigated the "Gagal memuatkan data" error reported by user
+- Discovered root cause: API `/api/applications` returns paginated response `{data, totalCount, page, limit, totalPages}` but `useFetch` consumers expected plain `Application[]` array
+- Found additional bugs in admin-dashboard.tsx: undefined `refetch()` (should be `fetchData()`) and undefined `filteredApps` (should be `applications`/`totalCount`)
+- Fixed admin-dashboard.tsx: replaced `refetch()` with `fetchData()`, replaced `filteredApps.length` with `applications.length`/`totalCount`
+- Fixed PT dashboard: updated `useFetch<Application[]>` to `useFetch<{data, totalCount, ...}>` and extracted `.data` array
+- Fixed PPKP dashboard: same fix pattern with limit=100
+- Fixed PPL dashboard: same fix pattern with limit=100
+- Fixed PLB dashboard: same fix pattern with limit=100
+- Fixed Kaunter dashboard: replaced inline card-based SenaraiPermohonan with shared `senarai-permohonan.tsx` component (table+pagination)
+- Fixed application-list.tsx: updated useFetch to handle paginated response
+- Cleaned up unused imports in kaunter-dashboard.tsx
+- Verified all fixes: lint passes, API returns correct paginated data, app loads successfully
+
+Stage Summary:
+- Root cause was API pagination response format mismatch with useFetch consumers
+- All 6 dashboard components fixed to handle paginated API response
+- Kaunter dashboard now uses shared SenaraiPermohonan component (table+pagination, 20 per page)
+- Admin dashboard pagination now correctly uses server-side totalCount

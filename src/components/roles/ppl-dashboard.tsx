@@ -97,13 +97,21 @@ export default function PPLDashboard({ user, onSelectApp }: PPLDashboardProps) {
     ? 'Menerima fail daripada PPKP(L)'
     : 'Menerima fail daripada PPKP(P)';
 
-  const { data: allApplications, loading, error, refetch } = useFetch<Application[]>(
-    '/api/applications',
+  const { data: rawApplications, loading, error, refetch } = useFetch<{
+    data: Application[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>(
+    '/api/applications?limit=100',
     { refreshInterval: 15000 }
   );
 
+  const allApplications = rawApplications?.data || [];
+
   // Filter applications for this PPL role
-  const applications = (allApplications || []).filter(
+  const applications = allApplications.filter(
     (app) => app.status === 'PPL_REVIEW' && app.pplStaff?.role === user.role
   );
 

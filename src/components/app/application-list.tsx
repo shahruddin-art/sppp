@@ -80,10 +80,18 @@ export default function ApplicationList({ onSelect }: ApplicationListProps) {
   if (typeFilter !== 'all') queryParams.set('type', typeFilter);
   if (search) queryParams.set('search', search);
 
-  const { data, loading, refetch } = useFetch<Application[]>(
-    `/api/applications?${queryParams.toString()}`,
+  const { data: rawData, loading, refetch } = useFetch<{
+    data: Application[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>(
+    `/api/applications?limit=100&${queryParams.toString()}`,
     { refreshInterval: 15000 }
   );
+
+  const data = rawData?.data || null;
 
   const hasFilters = statusFilter !== 'all' || zoneFilter !== 'all' || typeFilter !== 'all' || search !== '';
 

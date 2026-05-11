@@ -144,10 +144,18 @@ function SLABadge({ deadline }: { deadline: string | null }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function PTDashboard({ user, onSelectApp }: PTDashboardProps) {
-  const { data: applications, loading, refetch } = useFetch<Application[]>(
-    `/api/applications${user.zone ? `?zone=${user.zone}` : ''}`,
+  const { data: rawApplications, loading, refetch } = useFetch<{
+    data: Application[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>(
+    `/api/applications?limit=100${user.zone ? `&zone=${user.zone}` : ''}`,
     { refreshInterval: 30000 }
   );
+
+  const applications = rawApplications?.data || [];
 
   // Dialog state
   const [openFileDialog, setOpenFileDialog] = useState(false);

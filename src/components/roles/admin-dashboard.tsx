@@ -464,7 +464,7 @@ function PermohonanTab() {
               <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
               <p className="text-sm text-red-600">Gagal memuatkan data: {error}</p>
             </div>
-            <Button variant="outline" size="sm" className="shrink-0" onClick={() => refetch()}>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => fetchData()}>
               <RefreshCw className="h-3 w-3 mr-1" /> Cuba Lagi
             </Button>
           </CardContent>
@@ -527,7 +527,7 @@ function PermohonanTab() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" size="icon" onClick={() => refetch()} title="Muat semula">
+              <Button variant="outline" size="icon" onClick={() => fetchData()} title="Muat semula">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
@@ -541,7 +541,7 @@ function PermohonanTab() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-sm text-muted-foreground">Memuatkan...</span>
                 </div>
-              ) : filteredApps.length === 0 ? (
+              ) : applications.length === 0 ? (
                 <div className="py-12 text-center">
                   <FileText className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">Tiada permohonan dijumpai</p>
@@ -624,10 +624,10 @@ function PermohonanTab() {
           </Card>
 
           {/* Pagination */}
-          {!loading && filteredApps.length > 0 && (
+          {!loading && totalCount > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Menunjukkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredApps.length)} daripada {filteredApps.length} permohonan
+                Menunjukkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} daripada {totalCount} permohonan
               </p>
               {totalPages > 1 && (
                 <Pagination>
