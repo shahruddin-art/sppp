@@ -76,6 +76,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { useFetch, postData, putData, deleteData } from '@/hooks/use-fetch';
+import { getSessionToken } from '@/lib/auth-store';
 import { toast } from 'sonner';
 import { APPLICATION_TYPES, BUSINESS_TYPES, ZONES, STAFF_ROLES, APPLICATION_STATUSES, PLB_DECISIONS } from '@/lib/constants';
 import {
@@ -399,7 +400,7 @@ function PermohonanTab() {
       queryParams.set('page', currentPage.toString());
       queryParams.set('limit', ITEMS_PER_PAGE.toString());
 
-      const token = localStorage.getItem('session_token');
+      const token = getSessionToken();
       const res = await fetch(`/api/applications?${queryParams.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

@@ -31,6 +31,7 @@ import {
   ChevronRight,
   Loader2,
 } from 'lucide-react';
+import { getSessionToken } from '@/lib/auth-store';
 import {
   formatStatus,
   getStatusColor,
@@ -137,7 +138,7 @@ export default function SenaraiPermohonan({ onSelectApp }: SenaraiPermohonanProp
         queryParams.set('page', currentPage.toString());
         queryParams.set('limit', ITEMS_PER_PAGE.toString());
 
-        const token = localStorage.getItem('session_token');
+        const token = getSessionToken();
         const res = await fetch(`/api/applications?${queryParams.toString()}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

@@ -78,3 +78,23 @@ Stage Summary:
 - All 6 dashboard components fixed to handle paginated API response
 - Kaunter dashboard now uses shared SenaraiPermohonan component (table+pagination, 20 per page)
 - Admin dashboard pagination now correctly uses server-side totalCount
+
+---
+Task ID: 1b
+Agent: Main Agent
+Task: Fix "Gagal memuatkan data" error on admin dashboard (session token key mismatch)
+
+Work Log:
+- Investigated the "Gagal memuatkan data: Gagal memuatkan data" error on admin dashboard
+- Found root cause: localStorage key mismatch - auth-store saves token as `sessionToken` but admin-dashboard.tsx and senarai-permohonan.tsx were reading `session_token` (with underscore)
+- This caused all API requests from those components to be sent without auth headers, resulting in 401 errors
+- Fixed admin-dashboard.tsx: Changed `localStorage.getItem('session_token')` to `getSessionToken()` from auth-store
+- Fixed senarai-permohonan.tsx: Same fix - changed `localStorage.getItem('session_token')` to `getSessionToken()`
+- Added proper imports for `getSessionToken` from `@/lib/auth-store` in both files
+- Verified no other files reference the incorrect `session_token` key
+- Lint passes clean
+
+Stage Summary:
+- Root cause: localStorage key mismatch (`session_token` vs `sessionToken`)
+- Admin dashboard and senarai-permohonan now use `getSessionToken()` helper consistently
+- All API requests will now properly include auth headers
