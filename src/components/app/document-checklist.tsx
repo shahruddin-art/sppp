@@ -162,7 +162,7 @@ export default function DocumentChecklist({ application }: DocumentChecklistProp
       <p>Bil. ( 1 ) hingga ( ${checklistItems.length} ) adalah dirujuk.</p>
       <p>Untuk semakan dan kelulusan lesen bersyarat bagi aktiviti:-</p>
       <p class="label" style="margin-top:4pt;">${application.businessType || applicationTypeLabel}</p>
-      <p style="margin-top:6pt;">Nama Syarikat:- <span class="value">${application.applicantName}</span></p>
+      <p style="margin-top:6pt;">Nama Syarikat:- <span class="value">${application.businessName || application.applicantName}</span></p>
       <p>Di alamat:- <span class="value">${application.applicantAddress || '-'}</span></p>
     </div>
 
@@ -208,7 +208,7 @@ export default function DocumentChecklist({ application }: DocumentChecklistProp
           <p>Bil. ( 1 ) hingga ( {checklistItems.length} ) adalah dirujuk.</p>
           <p>Untuk semakan dan kelulusan lesen bersyarat bagi aktiviti:-</p>
           <p className="font-semibold text-foreground">{application.businessType || applicationTypeLabel}</p>
-          <p className="mt-1">Nama Syarikat:- <span className="font-semibold text-foreground">{application.applicantName}</span></p>
+          <p className="mt-1">Nama Syarikat:- <span className="font-semibold text-foreground">{application.businessName || application.applicantName}</span></p>
           {application.applicantAddress && (
             <p>Di alamat:- <span className="text-foreground">{application.applicantAddress}</span></p>
           )}
