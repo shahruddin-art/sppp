@@ -178,7 +178,7 @@ const STATUS_OPTIONS = Object.entries(APPLICATION_STATUSES).map(([key, val]) => 
   label: val.label,
 }));
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -224,7 +224,12 @@ export default function AdminDashboard({ user: _user }: AdminDashboardProps) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function PermohonanTab() {
-  const { data: applications, loading, error, refetch } = useFetch<ApplicationRow[]>('/api/applications');
+  // Server-side pagination state
+  const [applications, setApplications] = useState<ApplicationRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [serverTotalPages, setServerTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -360,7 +365,7 @@ function PermohonanTab() {
 
       setDialogOpen(false);
       resetForm();
-      refetch();
+      fetchData();
     } catch (err: any) {
       toast.error(err.message || 'Ralat semasa menyimpan');
     } finally {
@@ -373,7 +378,7 @@ function PermohonanTab() {
     try {
       await deleteData(`/api/applications/${deleteApp.id}`);
       toast.success('Permohonan berjaya dipadam');
-      refetch();
+      fetchData();
     } catch (err: any) {
       toast.error(err.message || 'Ralat semasa memadam');
     } finally {
@@ -381,31 +386,45 @@ function PermohonanTab() {
     }
   };
 
-  // Filtered applications
-  const filteredApps = (applications || []).filter((app) => {
-    const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
-    const matchesType = typeFilter === 'ALL' || app.applicationType === typeFilter;
-    const matchesZone = zoneFilter === 'ALL' || app.zone === zoneFilter;
-    const matchesSearch =
-      !searchQuery ||
-      app.applicantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.referenceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (app.fileNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.applicantIc.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesType && matchesZone && matchesSearch;
-  });
+  // Server-side data fetching with pagination
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const queryParams = new URLSearchParams();
+      if (statusFilter !== 'ALL') queryParams.set('status', statusFilter);
+      if (typeFilter !== 'ALL') queryParams.set('type', typeFilter);
+      if (zoneFilter !== 'ALL') queryParams.set('zone', zoneFilter);
+      if (searchQuery) queryParams.set('search', searchQuery);
+      queryParams.set('page', currentPage.toString());
+      queryParams.set('limit', ITEMS_PER_PAGE.toString());
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredApps.length / ITEMS_PER_PAGE));
-  const paginatedApps = filteredApps.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+      const token = localStorage.getItem('session_token');
+      const res = await fetch(`/api/applications?${queryParams.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Gagal memuatkan data');
+      const json = await res.json();
+      setApplications(json.data || []);
+      setTotalCount(json.totalCount || 0);
+      setServerTotalPages(json.totalPages || 1);
+    } catch (err: any) {
+      setError(err.message || 'Gagal memuatkan data');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, typeFilter, zoneFilter, searchQuery, currentPage]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, typeFilter, zoneFilter]);
+
+  // Pagination (server-side)
+  const totalPages = serverTotalPages;
+  const paginatedApps = applications;
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {

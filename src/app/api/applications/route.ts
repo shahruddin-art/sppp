@@ -22,6 +22,8 @@ export async function GET(request: Request) {
     const zone = searchParams.get('zone');
     const type = searchParams.get('type');
     const search = searchParams.get('search');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
 
     // Build role-based filter
     const roleFilter = getApplicationFilterForRole(user);
@@ -40,17 +42,22 @@ export async function GET(request: Request) {
       ];
     }
 
-    const applications = await db.application.findMany({
-      where,
-      include: {
-        steps: { orderBy: { createdAt: 'asc' } },
-        ptStaff: { select: { id: true, name: true, role: true } },
-        ppkpStaff: { select: { id: true, name: true, role: true } },
-        pplStaff: { select: { id: true, name: true, role: true } },
-        plbStaff: { select: { id: true, name: true, role: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const [applications, totalCount] = await Promise.all([
+      db.application.findMany({
+        where,
+        include: {
+          steps: { orderBy: { createdAt: 'asc' } },
+          ptStaff: { select: { id: true, name: true, role: true } },
+          ppkpStaff: { select: { id: true, name: true, role: true } },
+          pplStaff: { select: { id: true, name: true, role: true } },
+          plbStaff: { select: { id: true, name: true, role: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.application.count({ where }),
+    ]);
 
     // Add computed fields for each application
     const enriched = applications.map(app => {
@@ -75,7 +82,13 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(enriched);
+    return NextResponse.json({
+      data: enriched,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    });
   } catch (error) {
     console.error('Applications GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 });
