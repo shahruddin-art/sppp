@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Database
+db/
+*.db
+*.db-journal
+
+# Uploads and downloads (use Cloud Storage in prod)
+upload/
+download/
+
+# Environment files
+.env
+.env*.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+dev.log
+*.log
+
+# Docker files (not needed in gcloud source)
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+docs/
+agent-ctx/
+
+# Examples
+examples/
+
+# Caddy/PM2 (not needed for Cloud Run)
+Caddyfile
+ecosystem.config.js
+
+# Dev scripts
+run-dev.sh
+
+# Worklog
+worklog.md
+
+# Git
+.git/
+.gitignore
+
+# Coverage
+coverage/
