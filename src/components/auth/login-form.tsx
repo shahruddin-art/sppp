@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Loader2, LogIn, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -33,14 +34,19 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-sky-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-background to-sky-50 dark:from-background dark:via-background dark:to-background p-4 relative">
+      {/* Theme toggle - top right */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Sistem Pengurusan Prestasi</h1>
+          <h1 className="text-2xl font-bold text-foreground">Sistem Pengurusan Prestasi</h1>
           <p className="text-sm text-muted-foreground mt-1">Proses Permohonan Lesen Berpandukan Hari & Masa</p>
         </div>
 

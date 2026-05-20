@@ -19,6 +19,7 @@ import {
   ChevronDown,
   KeyRound,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +88,7 @@ export default function HomePage() {
   // Loading state while checking session
   if (!initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-sky-600 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Memuatkan sistem...</p>
@@ -104,8 +105,8 @@ export default function HomePage() {
   // Application detail view (overlay for any role)
   if (selectedAppId) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50/50">
-        <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="sticky top-0 z-50 bg-background border-b shadow-sm">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -113,7 +114,7 @@ export default function HomePage() {
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                  <h1 className="text-lg font-bold text-foreground leading-tight">
                     Butiran Permohonan
                   </h1>
                   <p className="text-[10px] text-muted-foreground leading-tight truncate max-w-[200px]">
@@ -130,7 +131,7 @@ export default function HomePage() {
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-5">
           <ApplicationDetail applicationId={selectedAppId} onBack={handleBackFromDetail} user={user} />
         </main>
-        <footer className="mt-auto border-t bg-white py-3">
+        <footer className="mt-auto border-t bg-background py-3">
           <div className="max-w-7xl mx-auto px-4">
             <p className="text-xs text-muted-foreground text-center">
               Sistem Pengurusan Prestasi Proses Permohonan © {new Date().getFullYear()}
@@ -168,9 +169,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50/50">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
+      <header className="sticky top-0 z-50 bg-background border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -178,7 +179,7 @@ export default function HomePage() {
                 <FileText className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                <h1 className="text-lg font-bold text-foreground leading-tight">
                   Sistem Pengurusan Prestasi
                 </h1>
                 <p className="text-[10px] text-muted-foreground leading-tight">
@@ -187,7 +188,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* Theme toggle */}
+              <ThemeToggle />
+
               {/* User menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -259,7 +263,7 @@ export default function HomePage() {
       />
 
       {/* Footer */}
-      <footer className="mt-auto border-t bg-white py-3">
+      <footer className="mt-auto border-t bg-background py-3">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
